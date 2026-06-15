@@ -42,7 +42,7 @@ export default function Home() {
             </div>
             <div>
               <span className="font-black text-xl text-[oklch(0.35_0.165_260)] leading-none block tracking-tight">SK Electronics</span>
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Lahore</span>
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Karachi</span>
             </div>
           </div>
           
@@ -73,7 +73,7 @@ export default function Home() {
             <div className="md:col-span-7 pr-8">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-100 text-[oklch(0.58_0.235_29.234)] text-xs font-bold mb-6">
                 <Star className="w-3.5 h-3.5 fill-current" />
-                Trusted Electronics Retailer in Lahore
+                Trusted Electronics Retailer in Karachi
               </div>
               <h1 className="text-5xl md:text-7xl font-black text-[oklch(0.35_0.165_260)] leading-[1.1] mb-6 tracking-tight">
                 Upgrade Your Home <br/>
@@ -213,7 +213,7 @@ export default function Home() {
                 <span className="font-black text-xl tracking-tight">SK Electronics</span>
               </div>
               <p className="text-white/60 text-sm leading-relaxed mb-6">
-                Your trusted partner for home appliances and electronics in Lahore. Quality products with flexible payment options.
+                Your trusted partner for home appliances and electronics in Karachi. Quality products with flexible payment options.
               </p>
             </div>
             
@@ -243,7 +243,7 @@ export default function Home() {
               <ul className="space-y-4 text-sm text-white/60">
                 <li className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-[oklch(0.58_0.235_29.234)] flex-shrink-0 mt-0.5" />
-                  <span>Shop #45, Electronics Market,<br/>Hall Road, Lahore</span>
+                  <span>Shop #45, Electronics Market,<br/>Hall Road, Karachi</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-[oklch(0.58_0.235_29.234)] flex-shrink-0" />

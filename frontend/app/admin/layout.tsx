@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div>
             <p className="font-bold text-sm text-white leading-tight">SK Electronics</p>
-            <p className="text-[10px] text-white/50 leading-tight">Lahore, PK</p>
+            <p className="text-[10px] text-white/50 leading-tight">Karachi, PK</p>
           </div>
         </div>
 
