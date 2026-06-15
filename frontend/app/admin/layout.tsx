@@ -92,10 +92,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-3 py-3 border-t border-white/10 flex-shrink-0 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-7 h-7 rounded-full bg-[oklch(0.58_0.235_29.234)] flex items-center justify-center text-white text-xs font-bold">
-              AM
+              SK
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">Abdul Moiz</p>
+              <p className="text-xs font-semibold text-white truncate">Shahid Khan</p>
               <p className="text-[10px] text-white/40 truncate">Admin</p>
             </div>
           </div>
@@ -129,9 +129,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition">
               <div className="w-7 h-7 rounded-full bg-[oklch(0.35_0.165_260)] flex items-center justify-center text-white text-xs font-bold">
-                AM
+                Sk
               </div>
-              <span className="text-sm font-medium text-gray-700 hidden sm:inline">Abdul Moiz</span>
+              <span className="text-sm font-medium text-gray-700 hidden sm:inline">Shahid Khan</span>
               <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
             </div>
           </div>
