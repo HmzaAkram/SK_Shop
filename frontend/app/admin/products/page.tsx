@@ -16,6 +16,9 @@ const products = [
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', description: '', category: '' })
+  const [isAddingCategory, setIsAddingCategory] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -38,7 +41,7 @@ export default function ProductsPage() {
           <h1 className="text-3xl font-bold text-foreground">Products</h1>
           <p className="text-foreground/70 mt-1">Manage your product inventory</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsAddModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Product
         </Button>
@@ -133,6 +136,102 @@ export default function ProductsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Add Product Modal (Dummy) */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Add New Product</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
+                <input 
+                  type="text" 
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                  placeholder="e.g. Samsung 65 TV"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Price (PKR)</label>
+                  <input 
+                    type="number" 
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Initial Stock</label>
+                  <input 
+                    type="number" 
+                    value={newProduct.stock}
+                    onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
+                {isAddingCategory ? (
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                      placeholder="New category name"
+                    />
+                    <Button variant="outline" onClick={() => setIsAddingCategory(false)}>Cancel</Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <select 
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                    >
+                      <option value="">Select a category</option>
+                      <option value="Refrigerators">Refrigerators</option>
+                      <option value="Air Conditioners">Air Conditioners</option>
+                      <option value="LED TVs">LED TVs</option>
+                      <option value="Washing Machines">Washing Machines</option>
+                      <option value="Microwaves">Microwaves</option>
+                    </select>
+                    <Button variant="outline" onClick={() => setIsAddingCategory(true)}>+ New</Button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                <textarea 
+                  rows={3}
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                  placeholder="Short product description..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+              <Button className="bg-primary hover:bg-primary/90" onClick={() => {
+                alert('Dummy action: Product saved!');
+                setIsAddModalOpen(false);
+              }}>Save Product</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

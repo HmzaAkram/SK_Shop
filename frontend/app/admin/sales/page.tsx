@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Eye, Trash2, Search, Download } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
 
 const sales = [
   { id: 'INV-001', customer: 'Ahmad Ali', date: '2024-06-14', items: 2, amount: '$2,850', status: 'Completed' },
@@ -42,10 +43,12 @@ export default function SalesPage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button className="bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            New Sale
-          </Button>
+          <Link href="/admin/sales/new">
+            <Button className="bg-primary hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              New Sale
+            </Button>
+          </Link>
         </div>
       </div>
 

@@ -38,6 +38,9 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  
+  const [recordingPayment, setRecordingPayment] = useState<typeof installments[0] | null>(null)
+  const [paymentForm, setPaymentForm] = useState({ amount: '', date: '', method: 'Cash' })
 
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
@@ -182,9 +185,18 @@ export default function PaymentsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-center gap-2">
                       {plan.status !== 'Completed' && (
-                        <Button size="sm" className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] h-8 text-xs px-3">Record Pay</Button>
+                        <Button 
+                          size="sm" 
+                          className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] h-8 text-xs px-3"
+                          onClick={() => {
+                            setRecordingPayment(plan);
+                            setPaymentForm({ amount: plan.dueAmount.toString(), date: new Date().toISOString().split('T')[0], method: 'Cash' });
+                          }}
+                        >
+                          Record Pay
+                        </Button>
                       )}
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-gray-200">
                         <FileText className="w-4 h-4 text-gray-500" />
@@ -203,6 +215,60 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
+
+      {/* Record Payment Modal (Dummy) */}
+      {recordingPayment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Record Installment Payment</h2>
+            <p className="text-sm text-gray-500 mb-6">Plan: {recordingPayment.id} • {recordingPayment.customer}</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Payment Amount (PKR)</label>
+                <input 
+                  type="number" 
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Payment Date</label>
+                <input 
+                  type="date" 
+                  value={paymentForm.date}
+                  onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Payment Method</label>
+                <select 
+                  value={paymentForm.method}
+                  onChange={(e) => setPaymentForm({...paymentForm, method: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none bg-white"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit Card">Credit Card</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button variant="outline" onClick={() => setRecordingPayment(null)}>Cancel</Button>
+              <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]" onClick={() => {
+                alert('Dummy action: Payment recorded successfully!');
+                setRecordingPayment(null);
+              }}>Confirm Payment</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

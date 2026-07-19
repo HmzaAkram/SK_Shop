@@ -6,19 +6,27 @@ import { ArrowRight, MapPin, Phone, MessageCircle, Star } from 'lucide-react'
 
 // Mock Data
 const featuredProducts = [
-  { id: '1', name: 'Dawlance 12 CFT Refrigerator (Chrome)', price: 82500, oldPrice: 89000, brand: 'Dawlance', tag: 'Best Seller', img: '🧊' },
-  { id: '2', name: 'Haier 1.5 Ton Inverter AC', price: 124000, oldPrice: 135000, brand: 'Haier', tag: 'Hot', img: '❄️' },
-  { id: '3', name: 'Samsung 43" Smart 4K TV', price: 68900, oldPrice: 75000, brand: 'Samsung', tag: 'New', img: '📺' },
-  { id: '4', name: 'Orient 2 in 1 Inverter AC', price: 118500, oldPrice: null, brand: 'Orient', tag: '', img: '💨' }
+  { id: '1', name: 'LG Washing Machine 8KG', price: 54000, oldPrice: 60000, brand: 'LG', tag: 'Best Seller', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png' },
+  { id: '2', name: 'Haier 1.5 Ton Inverter AC', price: 124000, oldPrice: 135000, brand: 'Haier', tag: 'Hot', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png' },
+  { id: '3', name: 'Dawlance Microwave Oven', price: 18500, oldPrice: null, brand: 'Dawlance', tag: 'New', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png' },
+  { id: '4', name: 'Orient Ceiling Fan', price: 8500, oldPrice: 9500, brand: 'Orient', tag: '', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png' },
+  { id: '5', name: 'Apple iPhone 13 Pro', price: 285000, oldPrice: 300000, brand: 'Apple', tag: 'Hot', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png' },
+  { id: '6', name: 'Solar Panel 540W Mono', price: 35000, oldPrice: 40000, brand: 'Longi', tag: 'Eco', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png' },
+  { id: '7', name: 'Samsung Washing Machine', price: 85000, oldPrice: 90000, brand: 'Samsung', tag: '', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png' },
+  { id: '8', name: 'Gree 1 Ton Inverter AC', price: 105000, oldPrice: null, brand: 'Gree', tag: 'Sale', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png' },
+  { id: '9', name: 'PEL 20L Microwave Oven', price: 15500, oldPrice: 17000, brand: 'PEL', tag: '', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png' },
+  { id: '10', name: 'Pak Fan Ceiling Fan', price: 7800, oldPrice: null, brand: 'Pak Fan', tag: 'Classic', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png' },
+  { id: '11', name: 'Samsung Galaxy S22', price: 195000, oldPrice: 210000, brand: 'Samsung', tag: '', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png' },
+  { id: '12', name: 'Solar Inverter 3KW', price: 125000, oldPrice: 135000, brand: 'Inverex', tag: 'New', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png' }
 ]
 
 const categories = [
-  { name: 'Refrigerators', count: '45+ items', icon: '🧊', colSpan: 'col-span-2 row-span-2', bg: 'bg-blue-50' },
-  { name: 'Air Conditioners', count: '32+ items', icon: '❄️', colSpan: 'col-span-2 row-span-2', bg: 'bg-cyan-50' },
-  { name: 'Washing Machines', count: '28+ items', icon: '🧺', colSpan: 'col-span-2 row-span-1', bg: 'bg-purple-50' },
-  { name: 'LED TVs', count: '50+ items', icon: '📺', colSpan: 'col-span-2 row-span-1', bg: 'bg-indigo-50' },
-  { name: 'Microwaves', count: '15+ items', icon: '♨️', colSpan: 'col-span-1 row-span-1', bg: 'bg-orange-50' },
-  { name: 'Fans', count: '80+ items', icon: '🌀', colSpan: 'col-span-1 row-span-1', bg: 'bg-gray-50' },
+  { name: 'Washing Machines', count: '28+ items', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', colSpan: 'col-span-2 row-span-2', bg: 'bg-purple-50' },
+  { name: 'Air Conditioners', count: '32+ items', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png', colSpan: 'col-span-2 row-span-2', bg: 'bg-cyan-50' },
+  { name: 'Smartphones', count: '50+ items', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', colSpan: 'col-span-2 row-span-1', bg: 'bg-indigo-50' },
+  { name: 'Solar Panels', count: '45+ items', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png', colSpan: 'col-span-2 row-span-1', bg: 'bg-blue-50' },
+  { name: 'Microwaves', count: '15+ items', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png', colSpan: 'col-span-1 row-span-1', bg: 'bg-orange-50' },
+  { name: 'Fans', count: '80+ items', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png', colSpan: 'col-span-1 row-span-1', bg: 'bg-gray-50' },
 ]
 
 export default function Home() {
@@ -36,15 +44,9 @@ export default function Home() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[oklch(0.58_0.235_29.234)] rounded-lg flex items-center justify-center shadow-lg shadow-[oklch(0.58_0.235_29.234)]/20">
-              <span className="font-black text-white text-xl tracking-tighter">SK</span>
-            </div>
-            <div>
-              <span className="font-black text-xl text-[oklch(0.35_0.165_260)] leading-none block tracking-tight">SK Electronics</span>
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Karachi</span>
-            </div>
-          </div>
+          <Link href="/" className="flex items-center gap-3 cursor-pointer">
+            <img src="/weblogo.png" alt="SK Electronics" className="h-45 w-auto" />
+          </Link>
           
           <div className="hidden md:flex gap-8 font-semibold text-sm">
             <Link href="/" className="text-[oklch(0.58_0.235_29.234)]">Home</Link>
@@ -66,7 +68,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gray-50 rounded-bl-[100px] -z-10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 md:pt-32 md:pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 md:pt-12 md:pb-32">
           <div className="grid md:grid-cols-12 gap-12 items-center">
             
             {/* Left Copy (55%) */}
@@ -102,7 +104,9 @@ export default function Home() {
             <div className="md:col-span-5 relative h-[500px] hidden md:block">
               {/* Product Card 1 */}
               <div className="absolute top-10 right-10 w-64 bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 rotate-3 z-20">
-                <div className="w-full h-40 bg-gray-50 rounded-xl mb-4 flex items-center justify-center text-6xl">🧊</div>
+                <div className="w-full h-40 bg-gray-50 rounded-xl mb-4 flex items-center justify-center">
+                  <img src="/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png" alt="Washing Machine" className="h-28 object-contain" />
+                </div>
                 <div className="text-xs text-gray-400 font-bold uppercase mb-1">Dawlance</div>
                 <div className="font-bold text-gray-900 leading-tight mb-2">12 CFT Refrigerator</div>
                 <div className="text-[oklch(0.58_0.235_29.234)] font-black text-lg">{formatPKR(82500)}</div>
@@ -112,7 +116,9 @@ export default function Home() {
               <div className="absolute bottom-20 left-0 w-72 bg-white p-4 rounded-2xl shadow-xl border border-gray-100 -rotate-6 z-30">
                 <div className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">Hot Sale</div>
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center text-4xl flex-shrink-0">❄️</div>
+                  <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <img src="/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png" alt="AC" className="h-12 object-contain" />
+                  </div>
                   <div>
                     <div className="text-xs text-gray-400 font-bold uppercase mb-1">Haier</div>
                     <div className="font-bold text-gray-900 leading-tight mb-1 text-sm">1.5 Ton Inverter AC</div>
@@ -142,7 +148,7 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-6 grid-rows-2 gap-4 h-[400px]">
           {categories.map((cat, idx) => (
             <Link key={idx} href={`/products?category=${cat.name}`} className={`${cat.colSpan} ${cat.bg} rounded-3xl p-6 group relative overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between border border-transparent hover:border-gray-200`}>
-              <div className="text-5xl group-hover:scale-110 transition-transform origin-bottom-left">{cat.icon}</div>
+              <img src={cat.img} alt={cat.name} className="w-16 h-16 object-contain group-hover:scale-110 transition-transform origin-bottom-left" />
               <div>
                 <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{cat.name}</h3>
                 <p className="text-sm text-gray-500 font-medium">{cat.count}</p>
@@ -167,7 +173,7 @@ export default function Home() {
             {featuredProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-2xl p-4 border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all group flex flex-col">
                 <div className="relative h-48 bg-gray-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                  <span className="text-7xl group-hover:scale-110 transition-transform duration-500">{product.img}</span>
+                  <img src={product.img} alt={product.name} className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-500" />
                   {product.tag && (
                     <span className="absolute top-3 left-3 bg-[oklch(0.58_0.235_29.234)] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                       {product.tag}

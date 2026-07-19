@@ -15,6 +15,8 @@ const customers = [
 
 export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', totalPurchases: '$0', status: 'Active' })
 
   return (
     <div className="space-y-6">
@@ -24,7 +26,7 @@ export default function CustomersPage() {
           <h1 className="text-3xl font-bold text-foreground">Customers</h1>
           <p className="text-foreground/70 mt-1">Manage customer accounts and information</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsAddModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Customer
         </Button>
@@ -135,6 +137,58 @@ export default function CustomersPage() {
           </Card>
         ))}
       </div>
+
+      {/* Add Customer Modal (Dummy) */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Add New Customer</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+                <input 
+                  type="text" 
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                  placeholder="e.g. Ali Khan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                <input 
+                  type="email" 
+                  value={newCustomer.email}
+                  onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                  placeholder="ali@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                  placeholder="03XX-XXXXXXX"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+              <Button className="bg-primary hover:bg-primary/90" onClick={() => {
+                alert('Dummy action: Customer added!');
+                setIsAddModalOpen(false);
+              }}>Save Customer</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -14,10 +14,14 @@ const catalog = [
 
 export default function NewSalePage() {
   const [step, setStep] = useState(1)
-  
+
   // Cart State
-  const [cart, setCart] = useState<{product: typeof catalog[0], qty: number}[]>([])
-  
+  const [cart, setCart] = useState<{ product: typeof catalog[0], qty: number, details?: { serialNo: string, discount: number, unitPrice: number } }[]>([])
+
+  // Product Details Modal State
+  const [addingProduct, setAddingProduct] = useState<typeof catalog[0] | null>(null)
+  const [productDetails, setProductDetails] = useState({ serialNo: '', discount: 0, unitPrice: 0 })
+
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [downPayment, setDownPayment] = useState('')
@@ -27,18 +31,25 @@ export default function NewSalePage() {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.qty), 0)
+  const subtotal = cart.reduce((sum, item) => sum + ((item.details?.unitPrice ?? item.product.price) * item.qty - (item.details?.discount ?? 0) * item.qty), 0)
   const remaining = paymentMethod === 'Installment' ? subtotal - Number(downPayment || 0) : 0
   const monthly = paymentMethod === 'Installment' ? remaining / installmentMonths : 0
 
-  const addToCart = (product: typeof catalog[0]) => {
+  const openProductModal = (product: typeof catalog[0]) => {
     if (product.stock === 0) return
-    const existing = cart.find(i => i.product.id === product.id)
+    setAddingProduct(product)
+    setProductDetails({ serialNo: '', discount: 0, unitPrice: product.price })
+  }
+
+  const confirmAddProduct = () => {
+    if (!addingProduct) return
+    const existing = cart.find(i => i.product.id === addingProduct.id)
     if (existing) {
-      setCart(cart.map(i => i.product.id === product.id ? {...i, qty: i.qty + 1} : i))
+      setCart(cart.map(i => i.product.id === addingProduct.id ? { ...i, qty: i.qty + 1 } : i))
     } else {
-      setCart([...cart, {product, qty: 1}])
+      setCart([...cart, { product: addingProduct, qty: 1, details: productDetails }])
     }
+    setAddingProduct(null)
   }
 
   return (
@@ -49,7 +60,7 @@ export default function NewSalePage() {
           <h1 className="text-2xl font-bold text-gray-900">New Sale</h1>
           <p className="text-gray-500 text-sm">Create a new invoice and process payment</p>
         </div>
-        
+
         {/* Steps */}
         <div className="flex items-center gap-2">
           {[
@@ -58,10 +69,9 @@ export default function NewSalePage() {
             { num: 3, label: 'Payment', icon: CreditCard }
           ].map((s, i) => (
             <div key={s.num} className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                step === s.num ? 'bg-[oklch(0.58_0.235_29.234)] text-white' : 
-                step > s.num ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
-              }`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${step === s.num ? 'bg-[oklch(0.58_0.235_29.234)] text-white' :
+                  step > s.num ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+                }`}>
                 {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : <s.icon className="w-4 h-4" />}
                 {s.label}
               </div>
@@ -74,18 +84,18 @@ export default function NewSalePage() {
       <div className="flex gap-6 flex-1 min-h-0">
         {/* Main Content Area (Left) */}
         <div className="flex-1 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          
+
           {/* STEP 1: CUSTOMER */}
           {step === 1 && (
-            <div className="p-6 flex flex-col h-full">
+            <div className="p-6 flex flex-col h-full overflow-y-auto">
               <h2 className="text-lg font-bold text-gray-900 mb-6">Select Customer</h2>
-              
+
               <div className="relative mb-6">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by name, phone, or CNIC..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
                 />
               </div>
 
@@ -99,19 +109,19 @@ export default function NewSalePage() {
               <div className="grid grid-cols-2 gap-4 mb-auto">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" placeholder="e.g. Tariq Mehmood" />
+                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" placeholder="03XX-XXXXXXX" />
+                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" placeholder="XXXXX-XXXXXXX-X" />
+                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="XXXXX-XXXXXXX-X" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                  <textarea className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" rows={2} placeholder="Complete home address"></textarea>
+                  <textarea className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
                 </div>
               </div>
             </div>
@@ -119,15 +129,15 @@ export default function NewSalePage() {
 
           {/* STEP 2: PRODUCTS */}
           {step === 2 && (
-            <div className="p-6 flex flex-col h-full">
-              <div className="flex justify-between items-center mb-6">
+            <div className="p-6 flex flex-col h-full overflow-y-auto">
+              <div className="flex justify-between items-center mb-6 shrink-0">
                 <h2 className="text-lg font-bold text-gray-900">Add Products</h2>
                 <div className="relative w-64">
                   <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search catalog..."
-                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-md text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -144,9 +154,9 @@ export default function NewSalePage() {
                     <h3 className="font-bold text-gray-900 text-sm mb-3 line-clamp-2">{product.name}</h3>
                     <div className="mt-auto flex items-center justify-between">
                       <span className="font-black text-[oklch(0.58_0.235_29.234)]">{formatPKR(product.price)}</span>
-                      <Button 
-                        size="sm" 
-                        onClick={() => addToCart(product)}
+                      <Button
+                        size="sm"
+                        onClick={() => openProductModal(product)}
                         disabled={product.stock === 0}
                         className={`h-7 px-2 text-xs ${product.stock > 0 ? 'bg-[oklch(0.35_0.165_260)] hover:bg-[oklch(0.25_0.165_260)] text-white' : 'bg-gray-200 text-gray-400'}`}
                       >
@@ -156,6 +166,52 @@ export default function NewSalePage() {
                   </div>
                 ))}
               </div>
+
+              {/* Add Product Details Modal */}
+              {addingProduct && (
+                <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Add Product Details</h3>
+                    <div className="mb-4 text-sm text-gray-500">{addingProduct.name}</div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Unit Price (PKR)</label>
+                        <input
+                          type="number"
+                          value={productDetails.unitPrice}
+                          onChange={(e) => setProductDetails({ ...productDetails, unitPrice: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Serial Number / IMEI</label>
+                        <input
+                          type="text"
+                          value={productDetails.serialNo}
+                          onChange={(e) => setProductDetails({ ...productDetails, serialNo: e.target.value })}
+                          placeholder="Optional"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Discount Amount (PKR)</label>
+                        <input
+                          type="number"
+                          value={productDetails.discount}
+                          onChange={(e) => setProductDetails({ ...productDetails, discount: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                      <Button variant="outline" onClick={() => setAddingProduct(null)}>Cancel</Button>
+                      <Button onClick={confirmAddProduct} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]">Add to Cart</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -163,7 +219,7 @@ export default function NewSalePage() {
           {step === 3 && (
             <div className="p-6 flex flex-col h-full overflow-y-auto">
               <h2 className="text-lg font-bold text-gray-900 mb-6">Payment Configuration</h2>
-              
+
               <div className="mb-8">
                 <label className="block text-sm font-bold text-gray-700 mb-3">Payment Method</label>
                 <div className="grid grid-cols-3 gap-3">
@@ -171,11 +227,10 @@ export default function NewSalePage() {
                     <button
                       key={method}
                       onClick={() => setPaymentMethod(method)}
-                      className={`py-3 px-4 rounded-lg border-2 text-sm font-bold transition-all ${
-                        paymentMethod === method 
-                          ? 'border-[oklch(0.58_0.235_29.234)] bg-[oklch(0.58_0.235_29.234)]/5 text-[oklch(0.58_0.235_29.234)]' 
+                      className={`py-3 px-4 rounded-lg border-2 text-sm font-bold transition-all ${paymentMethod === method
+                          ? 'border-[oklch(0.58_0.235_29.234)] bg-[oklch(0.58_0.235_29.234)]/5 text-[oklch(0.58_0.235_29.234)]'
                           : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       {method}
                     </button>
@@ -189,24 +244,24 @@ export default function NewSalePage() {
                     <CreditCard className="w-4 h-4 text-[oklch(0.58_0.235_29.234)]" />
                     Installment Details
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">Down Payment (PKR)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={downPayment}
                         onChange={(e) => setDownPayment(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]" 
-                        placeholder="0" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                        placeholder="0"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">Plan Duration</label>
-                      <select 
+                      <select
                         value={installmentMonths}
                         onChange={(e) => setInstallmentMonths(Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
                       >
                         <option value={3}>3 Months</option>
                         <option value={6}>6 Months</option>
@@ -245,7 +300,7 @@ export default function NewSalePage() {
                         </tr>
                         <tr>
                           <td className="px-3 py-2 text-gray-900 font-medium">{installmentMonths}</td>
-                          <td className="px-3 py-2 text-gray-500">15 Jun {2026 + Math.floor(installmentMonths/12)}</td>
+                          <td className="px-3 py-2 text-gray-500">15 Jun {2026 + Math.floor(installmentMonths / 12)}</td>
                           <td className="px-3 py-2 text-right font-bold text-[oklch(0.58_0.235_29.234)]">{formatPKR(monthly)}</td>
                         </tr>
                       </tbody>
@@ -261,10 +316,10 @@ export default function NewSalePage() {
             {step > 1 ? (
               <Button variant="outline" onClick={() => setStep(step - 1)}>Back</Button>
             ) : <div />}
-            
+
             {step < 3 ? (
-              <Button 
-                onClick={() => setStep(step + 1)} 
+              <Button
+                onClick={() => setStep(step + 1)}
                 className="bg-[oklch(0.35_0.165_260)] hover:bg-[oklch(0.25_0.165_260)]"
                 disabled={step === 2 && cart.length === 0}
               >
@@ -284,7 +339,7 @@ export default function NewSalePage() {
             <h3 className="font-bold">Current Cart</h3>
             <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
             {cart.length === 0 ? (
               <div className="text-center text-gray-400 py-10 text-sm">Cart is empty</div>
@@ -296,22 +351,22 @@ export default function NewSalePage() {
                     <div className="flex justify-between items-end">
                       <p className="text-[oklch(0.58_0.235_29.234)] font-black text-sm">{formatPKR(item.product.price)}</p>
                       <div className="flex items-center gap-2 border border-gray-200 rounded">
-                        <button 
+                        <button
                           className="px-2 py-0.5 text-gray-500 hover:bg-gray-100"
                           onClick={() => {
                             if (item.qty === 1) setCart(cart.filter(i => i.product.id !== item.product.id))
-                            else setCart(cart.map(i => i.product.id === item.product.id ? {...i, qty: i.qty - 1} : i))
+                            else setCart(cart.map(i => i.product.id === item.product.id ? { ...i, qty: i.qty - 1 } : i))
                           }}
                         >-</button>
                         <span className="text-xs font-bold w-4 text-center">{item.qty}</span>
-                        <button 
+                        <button
                           className="px-2 py-0.5 text-gray-500 hover:bg-gray-100"
-                          onClick={() => setCart(cart.map(i => i.product.id === item.product.id ? {...i, qty: i.qty + 1} : i))}
+                          onClick={() => setCart(cart.map(i => i.product.id === item.product.id ? { ...i, qty: i.qty + 1 } : i))}
                         >+</button>
                       </div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setCart(cart.filter(i => i.product.id !== item.product.id))}
                     className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
                   >
@@ -328,7 +383,7 @@ export default function NewSalePage() {
                 <span>Items Subtotal</span>
                 <span className="font-medium text-gray-900">{formatPKR(subtotal)}</span>
               </div>
-              
+
               {paymentMethod === 'Installment' && (
                 <>
                   <div className="flex justify-between text-gray-600">
@@ -348,7 +403,7 @@ export default function NewSalePage() {
                 </>
               )}
             </div>
-            
+
             <div className="pt-3 border-t-2 border-dashed border-gray-200 flex justify-between items-center">
               <span className="font-bold text-gray-900 uppercase text-xs">Total</span>
               <span className="text-2xl font-black text-[oklch(0.35_0.165_260)]">{formatPKR(subtotal)}</span>

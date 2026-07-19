@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen bg-[oklch(0.96_0_0)] overflow-hidden">
+    <div className="force-light flex h-screen bg-[oklch(0.96_0_0)] overflow-hidden">
       {/* Mobile Hamburger */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -116,26 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-5 flex-shrink-0 shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">{today}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[oklch(0.58_0.235_29.234)] rounded-full" />
-            </button>
-            <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition">
-              <div className="w-7 h-7 rounded-full bg-[oklch(0.35_0.165_260)] flex items-center justify-center text-white text-xs font-bold">
-                Sk
-              </div>
-              <span className="text-sm font-medium text-gray-700 hidden sm:inline">Shahid Khan</span>
-              <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
-            </div>
-          </div>
-        </header>
+        {/* Top Bar Removed */}
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">

@@ -5,14 +5,14 @@ import { ArrowLeft, Search, Filter, ChevronDown, Check, LayoutGrid, List } from 
 import { useState } from 'react'
 
 const products = [
-  { id: '1', name: 'Dawlance 12 CFT Refrigerator (Chrome)', sku: 'SK-REF-DWL-001', category: 'Refrigerators', brand: 'Dawlance', price: 82500, inStock: true, img: '🧊', featured: true },
-  { id: '2', name: 'Haier 1.5 Ton Inverter AC', sku: 'SK-AC-HIR-015', category: 'Air Conditioners', brand: 'Haier', price: 124000, inStock: true, img: '❄️', featured: false },
-  { id: '3', name: 'Samsung 43" Smart 4K TV', sku: 'SK-TV-SAM-043', category: 'LED TVs', brand: 'Samsung', price: 68900, inStock: true, img: '📺', featured: false },
-  { id: '4', name: 'Orient 2 in 1 Inverter AC', sku: 'SK-AC-ORT-020', category: 'Air Conditioners', brand: 'Orient', price: 118500, inStock: true, img: '💨', featured: false },
-  { id: '5', name: 'PEL 20 Ltr Microwave Oven', sku: 'SK-MW-PEL-020', category: 'Microwaves', brand: 'PEL', price: 18500, inStock: false, img: '♨️', featured: false },
-  { id: '6', name: 'Gree 1 Ton Inverter AC', sku: 'SK-AC-GRE-010', category: 'Air Conditioners', brand: 'Gree', price: 105000, inStock: true, img: '❄️', featured: false },
-  { id: '7', name: 'Dawlance Automatic Washing Machine 8kg', sku: 'SK-WM-DWL-008', category: 'Washing Machines', brand: 'Dawlance', price: 54000, inStock: true, img: '🧺', featured: false },
-  { id: '8', name: 'LG 55" UHD Smart TV', sku: 'SK-TV-LG-055', category: 'LED TVs', brand: 'LG', price: 145000, inStock: true, img: '📺', featured: false },
+  { id: '1', name: 'LG Washing Machine 8KG', sku: 'SK-WM-LG-008', category: 'Washing Machines', brand: 'LG', price: 54000, inStock: true, img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', featured: true },
+  { id: '2', name: 'Haier 1.5 Ton Inverter AC', sku: 'SK-AC-HIR-015', category: 'Air Conditioners', brand: 'Haier', price: 124000, inStock: true, img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png', featured: false },
+  { id: '3', name: 'Apple iPhone 13 Pro', sku: 'SK-PH-APP-13P', category: 'Smartphones', brand: 'Apple', price: 285000, inStock: true, img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', featured: false },
+  { id: '4', name: 'Solar Panel 540W Mono', sku: 'SK-SP-LON-540', category: 'Solar Panels', brand: 'Longi', price: 35000, inStock: true, img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png', featured: false },
+  { id: '5', name: 'PEL 20 Ltr Microwave Oven', sku: 'SK-MW-PEL-020', category: 'Microwaves', brand: 'PEL', price: 18500, inStock: false, img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png', featured: false },
+  { id: '6', name: 'Orient Ceiling Fan', sku: 'SK-FN-ORT-001', category: 'Fans', brand: 'Orient', price: 8500, inStock: true, img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png', featured: false },
+  { id: '7', name: 'Samsung Washing Machine', sku: 'SK-WM-SAM-001', category: 'Washing Machines', brand: 'Samsung', price: 85000, inStock: true, img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', featured: false },
+  { id: '8', name: 'Samsung Galaxy S22', sku: 'SK-PH-SAM-S22', category: 'Smartphones', brand: 'Samsung', price: 195000, inStock: true, img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', featured: false },
 ]
 
 export default function ProductsPage() {
@@ -155,7 +155,7 @@ export default function ProductsPage() {
                 <div className={`relative bg-gray-50 flex items-center justify-center overflow-hidden ${
                   product.featured ? 'sm:w-1/2 h-64 sm:h-auto' : 'h-56'
                 }`}>
-                  <span className={`${product.featured ? 'text-8xl' : 'text-7xl'} group-hover:scale-110 transition-transform duration-500`}>{product.img}</span>
+                  <img src={product.img} alt={product.name} className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-500" />
                   {!product.inStock && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
                       <span className="bg-red-500 text-white font-bold text-sm px-4 py-1.5 rounded-full shadow-lg">Out of Stock</span>
