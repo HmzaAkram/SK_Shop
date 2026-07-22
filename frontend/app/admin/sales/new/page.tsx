@@ -5,12 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Plus, Trash2, ChevronRight, User, ShoppingCart, CreditCard, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 
-const catalog = [
-  { id: 'p1', name: 'Dawlance 12 CFT Refrigerator', sku: 'SK-REF-DWL-001', price: 82500, stock: 4 },
-  { id: 'p2', name: 'Haier 1.5 Ton Inverter AC', sku: 'SK-AC-HIR-015', price: 124000, stock: 8 },
-  { id: 'p3', name: 'Samsung 43" Smart TV', sku: 'SK-TV-SAM-043', price: 68900, stock: 12 },
-  { id: 'p4', name: 'PEL 20 Ltr Microwave', sku: 'SK-MW-PEL-020', price: 18500, stock: 0 },
-]
+const catalog: any[] = []
 
 export default function NewSalePage() {
   const [step, setStep] = useState(1)

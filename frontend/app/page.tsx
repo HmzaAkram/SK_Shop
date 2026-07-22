@@ -3,29 +3,8 @@
 import Link from 'next/link'
 import { ArrowRight, MapPin, Phone, MessageCircle, Star, FileText } from 'lucide-react'
 // Mock Data
-const featuredProducts = [
-  { id: '1', name: 'LG Washing Machine 8KG', price: 54000, oldPrice: 60000, brand: 'LG', tag: 'Best Seller', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png' },
-  { id: '2', name: 'Haier 1.5 Ton Inverter AC', price: 124000, oldPrice: 135000, brand: 'Haier', tag: 'Hot', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png' },
-  { id: '3', name: 'Dawlance Microwave Oven', price: 18500, oldPrice: null, brand: 'Dawlance', tag: 'New', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png' },
-  { id: '4', name: 'Orient Ceiling Fan', price: 8500, oldPrice: 9500, brand: 'Orient', tag: '', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png' },
-  { id: '5', name: 'Apple iPhone 13 Pro', price: 285000, oldPrice: 300000, brand: 'Apple', tag: 'Hot', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png' },
-  { id: '6', name: 'Solar Panel 540W Mono', price: 35000, oldPrice: 40000, brand: 'Longi', tag: 'Eco', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png' },
-  { id: '7', name: 'Samsung Washing Machine', price: 85000, oldPrice: 90000, brand: 'Samsung', tag: '', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png' },
-  { id: '8', name: 'Gree 1 Ton Inverter AC', price: 105000, oldPrice: null, brand: 'Gree', tag: 'Sale', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png' },
-  { id: '9', name: 'PEL 20L Microwave Oven', price: 15500, oldPrice: 17000, brand: 'PEL', tag: '', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png' },
-  { id: '10', name: 'Pak Fan Ceiling Fan', price: 7800, oldPrice: null, brand: 'Pak Fan', tag: 'Classic', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png' },
-  { id: '11', name: 'Samsung Galaxy S22', price: 195000, oldPrice: 210000, brand: 'Samsung', tag: '', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png' },
-  { id: '12', name: 'Solar Inverter 3KW', price: 125000, oldPrice: 135000, brand: 'Inverex', tag: 'New', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png' }
-]
-
-const categories = [
-  { name: 'Washing Machines', count: '28+ items', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', colSpan: 'col-span-2 row-span-2', bg: 'bg-purple-50' },
-  { name: 'Air Conditioners', count: '32+ items', img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png', colSpan: 'col-span-2 row-span-2', bg: 'bg-cyan-50' },
-  { name: 'Smartphones', count: '50+ items', img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', colSpan: 'col-span-2 row-span-1', bg: 'bg-indigo-50' },
-  { name: 'Solar Panels', count: '45+ items', img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png', colSpan: 'col-span-2 row-span-1', bg: 'bg-blue-50' },
-  { name: 'Microwaves', count: '15+ items', img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png', colSpan: 'col-span-1 row-span-1', bg: 'bg-orange-50' },
-  { name: 'Fans', count: '80+ items', img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png', colSpan: 'col-span-1 row-span-1', bg: 'bg-gray-50' },
-]
+const featuredProducts: any[] = []
+const categories: any[] = []
 
 export default function Home() {
   const formatPKR = (amount: number) => {

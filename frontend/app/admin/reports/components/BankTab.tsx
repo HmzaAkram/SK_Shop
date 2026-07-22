@@ -13,14 +13,7 @@ export function BankTab() {
     }
   }
 
-  const transactions = [
-    { id: 'TRX-101', date: '21 Jun 2026', type: 'Sales Income', entity: 'Customer: Ahmad Ali', method: 'Bank Transfer', invoice: 'INV-004', amount: 50000, balance: 350000 },
-    { id: 'TRX-102', date: '20 Jun 2026', type: 'Expense', entity: 'K-Electric', method: 'Bank Transfer', invoice: '-', amount: -15500, balance: 300000 },
-    { id: 'TRX-103', date: '18 Jun 2026', type: 'Supplier Payment', entity: 'Samsung Distributor', method: 'Cheque', invoice: 'PUR-1001', amount: -150000, balance: 315500 },
-    { id: 'TRX-104', date: '15 Jun 2026', type: 'Customer Payment', entity: 'Customer: Fatima Khan (Installment)', method: 'Cash', invoice: 'PLAN-002', amount: 12000, balance: 465500 },
-    { id: 'TRX-105', date: '12 Jun 2026', type: 'Supplier Payment', entity: 'Apple Official', method: 'Bank Transfer', invoice: 'PUR-1002', amount: -1750000, balance: 453500 },
-    { id: 'TRX-106', date: '10 Jun 2026', type: 'Sales Income', entity: 'Walk-in Customer', method: 'Cash', invoice: 'INV-001', amount: 150000, balance: 2203500 },
-  ]
+  const transactions: any[] = []
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

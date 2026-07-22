@@ -6,13 +6,7 @@ import { Plus, Edit, Trash2, Search, Eye } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 
-const customers = [
-  { id: 1, name: 'Ahmad Ali', email: 'ahmad@example.com', phone: '+92 300 123 4567', totalPurchases: 'RS 5,400', status: 'Active' },
-  { id: 2, name: 'Fatima Khan', email: 'fatima@example.com', phone: '+92 301 234 5678', totalPurchases: 'RS 3,200', status: 'Active' },
-  { id: 3, name: 'Muhammad Hassan', email: 'hassan@example.com', phone: '+92 302 345 6789', totalPurchases: 'RS 8,900', status: 'Inactive' },
-  { id: 4, name: 'Aisha Mohamed', email: 'aisha@example.com', phone: '+92 303 456 7890', totalPurchases: 'RS 6,100', status: 'Active' },
-  { id: 5, name: 'Ibrahim Rashid', email: 'ibrahim@example.com', phone: '+92 304 567 8901', totalPurchases: 'RS 2,300', status: 'Active' },
-]
+const customers: any[] = []
 
 export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')

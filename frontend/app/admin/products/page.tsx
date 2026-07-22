@@ -5,14 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Search, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 
-const products = [
-  { id: 1, name: 'Samsung 65" TV', category: 'Televisions', price: 'RS 899', stock: 45, status: 'In Stock' },
-  { id: 2, name: 'iPhone 15 Pro', category: 'Smartphones', price: 'RS 1,299', stock: 12, status: 'Low Stock' },
-  { id: 3, name: 'PlayStation 5', category: 'Gaming', price: 'RS 499', stock: 0, status: 'Out of Stock' },
-  { id: 4, name: 'MacBook Air M3', category: 'Laptops', price: 'RS 1,199', stock: 8, status: 'Low Stock' },
-  { id: 5, name: 'Samsung Refrigerator', category: 'Appliances', price: 'RS 1,500', stock: 15, status: 'In Stock' },
-  { id: 6, name: 'Sony Headphones', category: 'Audio', price: 'RS 349', stock: 32, status: 'In Stock' },
-]
+const products: any[] = []
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')

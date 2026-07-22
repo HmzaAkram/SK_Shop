@@ -15,42 +15,19 @@ export default function CustomerProfile() {
 
   // Mock Data
   const customer = {
-    name: 'Tariq Mehmood',
-    cnic: '35202-1234567-1',
-    phone: '0300-9876543',
-    address: 'House 45, Street 2, Gulberg III, Lahore',
-    joinDate: '12 Jan 2024',
-    witness: 'Ali Raza (0300-1122334)',
-    outstanding: 45000,
-    status: 'Overdue' // 'Good Standing' | 'Overdue'
+    name: '',
+    cnic: '',
+    phone: '',
+    address: '',
+    joinDate: '',
+    witness: '',
+    outstanding: 0,
+    status: 'Good Standing' // 'Good Standing' | 'Overdue'
   }
 
-  const purchases = [
-    { id: 'SK-2026-00042', date: '10 May 2026', products: 'Dawlance 12 CFT Refrigerator', amount: 82500, type: 'Installment' },
-    { id: 'SK-2025-01452', date: '15 Nov 2025', products: 'PEL 20 Ltr Microwave', amount: 18500, type: 'Cash' },
-  ]
-
-  const installments = [
-    { 
-      id: 'PLN-001',
-      product: 'Dawlance 12 CFT Refrigerator', 
-      date: '10 May 2026',
-      total: 82500,
-      down: 20000,
-      monthly: 5208,
-      months: 12,
-      paid: 25208, // Down + 1 month
-      remaining: 57292,
-      status: 'Overdue',
-      nextDue: '10 Jun 2026' // Past due
-    }
-  ]
-
-  const payments = [
-    { id: 'REC-002', date: '10 May 2026', amount: 5208, method: 'Cash', type: 'Installment (1/12)', recordedBy: 'Admin' },
-    { id: 'REC-001', date: '10 May 2026', amount: 20000, method: 'Cash', type: 'Down Payment', recordedBy: 'Admin' },
-    { id: 'REC-1452', date: '15 Nov 2025', amount: 18500, method: 'Bank Transfer', type: 'Full Payment', recordedBy: 'Admin' },
-  ]
+  const purchases: any[] = []
+  const installments: any[] = []
+  const payments: any[] = []
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

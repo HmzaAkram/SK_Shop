@@ -6,13 +6,7 @@ import { Calendar, TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { FilterExportBar } from './FilterExportBar'
 
-const categoryData = [
-  { name: 'Televisions', value: 35 },
-  { name: 'Smartphones', value: 25 },
-  { name: 'Laptops', value: 20 },
-  { name: 'Gaming', value: 12 },
-  { name: 'Audio', value: 8 },
-]
+const categoryData: any[] = []
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']
 
@@ -23,13 +17,8 @@ export function AnalyticsTab() {
   const [selectedMonth, setSelectedMonth] = useState('March')
   const [selectedYear, setSelectedYear] = useState('2026')
 
-  // Deterministic mock data generation
   const getFinancialData = (month: string, year: string) => {
-    const seed = month.length * parseInt(year)
-    const sales = 1500000 + (seed * 12345) % 1500000
-    const grossProfit = sales * 0.35
-    const expenses = grossProfit * 0.4
-    return { sales, grossProfit, expenses }
+    return { sales: 0, grossProfit: 0, expenses: 0 }
   }
 
   const currentFinance = getFinancialData(selectedMonth, selectedYear)
@@ -166,13 +155,7 @@ export function AnalyticsTab() {
       <Card className="p-6">
         <h2 className="text-lg font-bold text-foreground mb-4">Top Selling Products</h2>
         <div className="space-y-3">
-          {[
-            { rank: 1, name: 'Samsung 65" TV', sales: 45, revenue: 'RS 4,045,500' },
-            { rank: 2, name: 'iPhone 15 Pro', sales: 38, revenue: 'RS 4,926,200' },
-            { rank: 3, name: 'MacBook Air M3', sales: 28, revenue: 'RS 3,357,200' },
-            { rank: 4, name: 'PlayStation 5', sales: 22, revenue: 'RS 1,097,800' },
-            { rank: 5, name: 'Sony Headphones', sales: 32, revenue: 'RS 1,116,800' },
-          ].map((product) => (
+          {([] as any[]).map((product) => (
             <div key={product.rank} className="flex items-center justify-between p-4 bg-background rounded-lg border border-border hover:border-primary/50 transition">
               <div className="flex items-center gap-4">
                 <span className="text-lg font-bold text-primary w-8 text-center">#{product.rank}</span>

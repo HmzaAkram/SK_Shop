@@ -4,24 +4,15 @@ import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ChevronDown, Check, LayoutGrid, List } from 'lucide-react'
 import { useState } from 'react'
 
-const products = [
-  { id: '1', name: 'LG Washing Machine 8KG', sku: 'SK-WM-LG-008', category: 'Washing Machines', brand: 'LG', price: 54000, inStock: true, img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', featured: true },
-  { id: '2', name: 'Haier 1.5 Ton Inverter AC', sku: 'SK-AC-HIR-015', category: 'Air Conditioners', brand: 'Haier', price: 124000, inStock: true, img: '/dummydata/png-transparent-india-evaporative-cooler-symphony-limited-fan-cooler-world-refrigeration-home-appliance-thumbnail.png', featured: false },
-  { id: '3', name: 'Apple iPhone 13 Pro', sku: 'SK-PH-APP-13P', category: 'Smartphones', brand: 'Apple', price: 285000, inStock: true, img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', featured: false },
-  { id: '4', name: 'Solar Panel 540W Mono', sku: 'SK-SP-LON-540', category: 'Solar Panels', brand: 'Longi', price: 35000, inStock: true, img: '/dummydata/png-transparent-solar-panels-solar-power-solar-energy-voltaic-system-solar-lamp-solar-panel-miscellaneous-solar-street-light-solar-inverter-thumbnail.png', featured: false },
-  { id: '5', name: 'PEL 20 Ltr Microwave Oven', sku: 'SK-MW-PEL-020', category: 'Microwaves', brand: 'PEL', price: 18500, inStock: false, img: '/dummydata/png-transparent-white-microwave-oven-microwave-oven-home-appliance-dishwasher-washing-machine-microwave-oven-electronics-white-kitchen-appliance-thumbnail.png', featured: false },
-  { id: '6', name: 'Orient Ceiling Fan', sku: 'SK-FN-ORT-001', category: 'Fans', brand: 'Orient', price: 8500, inStock: true, img: '/dummydata/png-transparent-ceiling-fans-ceiling-fan-home-appliance-art-ceiling-thumbnail.png', featured: false },
-  { id: '7', name: 'Samsung Washing Machine', sku: 'SK-WM-SAM-001', category: 'Washing Machines', brand: 'Samsung', price: 85000, inStock: true, img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png', featured: false },
-  { id: '8', name: 'Samsung Galaxy S22', sku: 'SK-PH-SAM-S22', category: 'Smartphones', brand: 'Samsung', price: 195000, inStock: true, img: '/dummydata/png-transparent-smartphone-iphone-mobile-marketing-telecommunication-computer-smartphone-gadget-electronics-service-thumbnail.png', featured: false },
-]
+const products: any[] = []
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   
-  const categories = ['All', 'Refrigerators', 'Air Conditioners', 'Washing Machines', 'LED TVs', 'Microwaves']
-  const brands = ['Dawlance', 'Haier', 'Samsung', 'Orient', 'PEL', 'Gree', 'LG']
+  const categories: any[] = []
+  const brands: any[] = []
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands(prev => 

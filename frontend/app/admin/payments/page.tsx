@@ -6,33 +6,7 @@ import { Search, ChevronDown, Calendar, AlertCircle, CheckCircle2, ChevronRight,
 import { useState } from 'react'
 import Link from 'next/link'
 
-const installments = [
-  { 
-    id: 'PLN-001', customer: 'Tariq Mehmood', product: 'Dawlance 12 CFT Refrigerator', 
-    total: 82500, paid: 25208, remaining: 57292, 
-    status: 'Overdue', nextDue: '10 Jun 2026', dueAmount: 5208 
-  },
-  { 
-    id: 'PLN-002', customer: 'Sana Javed', product: 'Haier 1.5 Ton Inverter AC', 
-    total: 124000, paid: 84000, remaining: 40000, 
-    status: 'Good', nextDue: '25 Jun 2026', dueAmount: 10000 
-  },
-  { 
-    id: 'PLN-003', customer: 'Usman Ali', product: 'Samsung 43" Smart TV', 
-    total: 68900, paid: 13780, remaining: 55120, 
-    status: 'Due Today', nextDue: '15 Jun 2026', dueAmount: 4593 
-  },
-  { 
-    id: 'PLN-004', customer: 'Zainab Bibi', product: 'PEL 20 Ltr Microwave', 
-    total: 18500, paid: 18500, remaining: 0, 
-    status: 'Completed', nextDue: '-', dueAmount: 0 
-  },
-  { 
-    id: 'PLN-005', customer: 'Ali Hassan', product: 'Gree 1 Ton Inverter AC', 
-    total: 105000, paid: 35000, remaining: 70000, 
-    status: 'Overdue', nextDue: '01 Jun 2026', dueAmount: 8750 
-  },
-]
+const installments: any[] = []
 
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState('')

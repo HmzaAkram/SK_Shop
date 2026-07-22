@@ -25,13 +25,7 @@ export function ExpensesTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {[
-                  { date: '15 Jun 2026', cat: 'Utilities', desc: 'Electric Bill (K-Electric)', method: 'Bank Transfer', amount: 15500 },
-                  { date: '14 Jun 2026', cat: 'Staff', desc: 'Tea & Snacks', method: 'Cash', amount: 850 },
-                  { date: '12 Jun 2026', cat: 'Logistics', desc: 'Delivery Charges (City)', method: 'Cash', amount: 2500 },
-                  { date: '10 Jun 2026', cat: 'Maintenance', desc: 'AC Repair in Shop', method: 'EasyPaisa', amount: 3000 },
-                  { date: '01 Jun 2026', cat: 'Rent', desc: 'Shop Monthly Rent', method: 'Cheque', amount: 45000 },
-                ].map((exp, i) => (
+                {([] as any[]).map((exp, i) => (
                   <tr key={i} className="hover:bg-muted/50 transition cursor-pointer">
                     <td className="px-4 py-3 text-foreground/70">{exp.date}</td>
                     <td className="px-4 py-3"><span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">{exp.cat}</span></td>

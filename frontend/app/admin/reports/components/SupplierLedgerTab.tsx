@@ -6,53 +6,7 @@ import { FilterExportBar } from './FilterExportBar'
 export function SupplierLedgerTab({ onTransactionClick }: { onTransactionClick: (t: any) => void }) {
   const [showAddPurchase, setShowAddPurchase] = useState(false)
 
-  const purchases = [
-    {
-      id: 'PUR-1001',
-      supplier: 'Samsung Distributor',
-      date: '10 Jun 2026',
-      product: 'Samsung 65" 4K TV',
-      qty: 10,
-      rate: 50000,
-      totalBill: 500000,
-      paid: 300000,
-      remaining: 200000,
-      status: 'Partially Paid',
-      history: [
-        { date: '10 Jun 2026', amount: 100000, method: 'Bank Transfer' },
-        { date: '18 Jun 2026', amount: 150000, method: 'Cheque' },
-        { date: '01 Jul 2026', amount: 50000, method: 'Bank Transfer' },
-      ]
-    },
-    {
-      id: 'PUR-1002',
-      supplier: 'Apple Official',
-      date: '12 Jun 2026',
-      product: 'iPhone 15 Pro Max',
-      qty: 5,
-      rate: 350000,
-      totalBill: 1750000,
-      paid: 1750000,
-      remaining: 0,
-      status: 'Paid',
-      history: [
-        { date: '12 Jun 2026', amount: 1750000, method: 'Bank Transfer' },
-      ]
-    },
-    {
-      id: 'PUR-1003',
-      supplier: 'Sony Electronics',
-      date: '20 Jun 2026',
-      product: 'PlayStation 5',
-      qty: 20,
-      rate: 130000,
-      totalBill: 2600000,
-      paid: 0,
-      remaining: 2600000,
-      status: 'Unpaid',
-      history: []
-    }
-  ]
+  const purchases: any[] = []
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

@@ -6,13 +6,7 @@ import { Plus, Eye, Trash2, Search, Download } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 
-const sales = [
-  { id: 'INV-001', customer: 'Ahmad Ali', date: '2024-06-14', items: 2, amount: 'RS 2,850', status: 'Completed' },
-  { id: 'INV-002', customer: 'Fatima Khan', date: '2024-06-13', items: 1, amount: 'RS 1,200', status: 'Pending' },
-  { id: 'INV-003', customer: 'Muhammad Hassan', date: '2024-06-12', items: 3, amount: 'RS 4,500', status: 'Completed' },
-  { id: 'INV-004', customer: 'Aisha Mohamed', date: '2024-06-11', items: 1, amount: 'RS 899', status: 'Completed' },
-  { id: 'INV-005', customer: 'Ibrahim Rashid', date: '2024-06-10', items: 2, amount: 'RS 2,100', status: 'Cancelled' },
-]
+const sales: any[] = []
 
 export default function SalesPage() {
   const [searchQuery, setSearchQuery] = useState('')

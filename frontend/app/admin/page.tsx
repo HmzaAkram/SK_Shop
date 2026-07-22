@@ -6,14 +6,7 @@ import { TrendingUp, AlertCircle, DollarSign, Package, Users, ShoppingCart, Cloc
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import Link from 'next/link'
 
-const monthlyData = [
-  { month: 'Jan', revenue: 4500000, profit: 1200000 },
-  { month: 'Feb', revenue: 5200000, profit: 1450000 },
-  { month: 'Mar', revenue: 4800000, profit: 1300000 },
-  { month: 'Apr', revenue: 6100000, profit: 1800000 },
-  { month: 'May', revenue: 5800000, profit: 1600000 },
-  { month: 'Jun', revenue: 6500000, profit: 1950000 },
-]
+const monthlyData: any[] = []
 
 export default function AdminDashboard() {
   const formatPKR = (amount: number) => {
@@ -21,48 +14,12 @@ export default function AdminDashboard() {
   }
 
   const kpis = [
-    {
-      label: 'Revenue (June)',
-      value: formatPKR(6500000),
-      change: '+12.5%',
-      icon: DollarSign,
-      status: 'success',
-    },
-    {
-      label: 'Profit (June)',
-      value: formatPKR(1950000),
-      change: '+15.2%',
-      icon: TrendingUp,
-      status: 'success',
-    },
-    {
-      label: 'Active Installments',
-      value: '245',
-      change: '+5',
-      icon: Users,
-      status: 'neutral',
-    },
-    {
-      label: 'Due Today',
-      value: '12',
-      change: formatPKR(145000),
-      icon: Clock,
-      status: 'warning',
-    },
-    {
-      label: 'Overdue Amount',
-      value: formatPKR(450000),
-      change: '15 Customers',
-      icon: AlertCircle,
-      status: 'danger',
-    },
-    {
-      label: 'Low Stock Items',
-      value: '8',
-      change: 'Needs reorder',
-      icon: Package,
-      status: 'warning',
-    },
+    { label: 'Revenue (June)', value: formatPKR(0), change: '', icon: DollarSign, status: 'neutral' },
+    { label: 'Profit (June)', value: formatPKR(0), change: '', icon: TrendingUp, status: 'neutral' },
+    { label: 'Active Installments', value: '0', change: '', icon: Users, status: 'neutral' },
+    { label: 'Due Today', value: '0', change: '', icon: Clock, status: 'neutral' },
+    { label: 'Overdue Amount', value: formatPKR(0), change: '', icon: AlertCircle, status: 'neutral' },
+    { label: 'Low Stock Items', value: '0', change: '', icon: Package, status: 'neutral' },
   ]
 
   return (
@@ -137,10 +94,7 @@ export default function AdminDashboard() {
             <div className="bg-red-50/50 px-5 py-2 border-b border-red-100">
               <span className="text-xs font-bold text-red-700 uppercase tracking-wider">Overdue (3)</span>
             </div>
-            {[
-              { name: 'Tariq Mehmood', inv: 'SK-2026-00042', amount: 15000, days: 5 },
-              { name: 'Sana Javed', inv: 'SK-2026-00018', amount: 8500, days: 12 },
-            ].map((item, i) => (
+            {([] as any[]).map((item, i) => (
               <div key={`overdue-${i}`} className="px-5 py-3 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{item.name}</p>
@@ -157,10 +111,7 @@ export default function AdminDashboard() {
             <div className="bg-amber-50/50 px-5 py-2 border-b border-amber-100">
               <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Due Today (4)</span>
             </div>
-            {[
-              { name: 'Usman Ali', inv: 'SK-2026-00085', amount: 12000 },
-              { name: 'Kashif Raza', inv: 'SK-2026-00091', amount: 25000 },
-            ].map((item, i) => (
+            {([] as any[]).map((item, i) => (
               <div key={`today-${i}`} className="px-5 py-3 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{item.name}</p>
@@ -195,13 +146,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {[
-                  { id: 'SK-2026-00145', name: 'Faizan Ahmed', amount: 124000, method: 'Cash', status: 'Paid', date: 'Today, 10:42 AM' },
-                  { id: 'SK-2026-00144', name: 'Zainab Bibi', amount: 82500, method: 'Installment', status: 'Active', date: 'Today, 09:15 AM' },
-                  { id: 'SK-2026-00143', name: 'Ali Hassan', amount: 18500, method: 'Card', status: 'Paid', date: 'Yesterday' },
-                  { id: 'SK-2026-00142', name: 'Bilal Qureshi', amount: 215000, method: 'Installment', status: 'Active', date: 'Yesterday' },
-                  { id: 'SK-2026-00141', name: 'Sadia Imran', amount: 45000, method: 'Bank Transfer', status: 'Pending', date: '13 Jun 2026' },
-                ].map((sale) => (
+                {([] as any[]).map((sale) => (
                   <tr key={sale.id} className="hover:bg-gray-50 transition">
                     <td className="px-5 py-3">
                       <span className="font-semibold text-gray-900">{sale.id}</span>
@@ -241,12 +186,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {[
-                  { name: 'Dawlance 12 CFT Refrigerator', sku: 'SK-REF-DWL-001', qty: 2, threshold: 5 },
-                  { name: 'Haier 1.5 Ton Inverter AC', sku: 'SK-AC-HIR-015', qty: 1, threshold: 10 },
-                  { name: 'PEL 20 Ltr Microwave', sku: 'SK-MW-PEL-020', qty: 0, threshold: 4 },
-                  { name: 'Orient 32" LED TV', sku: 'SK-TV-ORT-032', qty: 3, threshold: 8 },
-                ].map((item, i) => (
+                {([] as any[]).map((item, i) => (
                   <tr key={i} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900 text-xs line-clamp-1">{item.name}</p>
