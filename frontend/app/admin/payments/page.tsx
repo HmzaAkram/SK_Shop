@@ -218,8 +218,8 @@ export default function PaymentsPage() {
 
       {/* Record Payment Modal (Dummy) */}
       {recordingPayment && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRecordingPayment(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Record Installment Payment</h2>
             <p className="text-sm text-gray-500 mb-6">Plan: {recordingPayment.id} • {recordingPayment.customer}</p>
             
@@ -230,7 +230,7 @@ export default function PaymentsPage() {
                   type="number" 
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
                   placeholder="0"
                 />
               </div>
@@ -241,7 +241,7 @@ export default function PaymentsPage() {
                   type="date" 
                   value={paymentForm.date}
                   onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none" 
                 />
               </div>
 
@@ -250,7 +250,7 @@ export default function PaymentsPage() {
                 <select 
                   value={paymentForm.method}
                   onChange={(e) => setPaymentForm({...paymentForm, method: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none bg-white"
                 >
                   <option value="Cash">Cash</option>
                   <option value="Bank Transfer">Bank Transfer</option>
@@ -260,11 +260,11 @@ export default function PaymentsPage() {
             </div>
 
             <div className="flex justify-end gap-3 mt-8">
-              <Button variant="outline" onClick={() => setRecordingPayment(null)}>Cancel</Button>
-              <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]" onClick={() => {
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setRecordingPayment(null)}>Cancel</button>
+              <button className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={() => {
                 alert('Dummy action: Payment recorded successfully!');
                 setRecordingPayment(null);
-              }}>Confirm Payment</Button>
+              }}>Confirm Payment</button>
             </div>
           </div>
         </div>

@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@/components/ui/card'
-import { ArrowRight, MapPin, Phone, MessageCircle, Star } from 'lucide-react'
-
+import { ArrowRight, MapPin, Phone, MessageCircle, Star, FileText } from 'lucide-react'
 // Mock Data
 const featuredProducts = [
   { id: '1', name: 'LG Washing Machine 8KG', price: 54000, oldPrice: 60000, brand: 'LG', tag: 'Best Seller', img: '/dummydata/png-transparent-washing-machines-lg-electronics-direct-drive-mechanism-home-appliance-washing-machine-electronics-home-appliance-washing-machine-thumbnail.png' },
@@ -56,11 +54,11 @@ export default function Home() {
           </div>
           
           <div className="flex items-center gap-4">
-            <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer" 
-               className="hidden sm:flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebd5a] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-[#25D366]/20 transition-transform hover:-translate-y-0.5">
-              <MessageCircle className="w-4 h-4 fill-current" />
-              WhatsApp Us
-            </a>
+            <Link href="/track-installment"
+               className="hidden sm:flex items-center gap-2 bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-[oklch(0.58_0.235_29.234)]/20 transition-transform hover:-translate-y-0.5">
+              <FileText className="w-4 h-4 fill-current" />
+              Track Installment
+            </Link>
           </div>
         </div>
       </nav>

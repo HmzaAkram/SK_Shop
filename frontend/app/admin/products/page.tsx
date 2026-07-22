@@ -2,22 +2,56 @@
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 
 const products = [
-  { id: 1, name: 'Samsung 65" TV', category: 'Televisions', price: '$899', stock: 45, status: 'In Stock' },
-  { id: 2, name: 'iPhone 15 Pro', category: 'Smartphones', price: '$1,299', stock: 12, status: 'Low Stock' },
-  { id: 3, name: 'PlayStation 5', category: 'Gaming', price: '$499', stock: 0, status: 'Out of Stock' },
-  { id: 4, name: 'MacBook Air M3', category: 'Laptops', price: '$1,199', stock: 8, status: 'Low Stock' },
-  { id: 5, name: 'Samsung Refrigerator', category: 'Appliances', price: '$1,500', stock: 15, status: 'In Stock' },
-  { id: 6, name: 'Sony Headphones', category: 'Audio', price: '$349', stock: 32, status: 'In Stock' },
+  { id: 1, name: 'Samsung 65" TV', category: 'Televisions', price: 'RS 899', stock: 45, status: 'In Stock' },
+  { id: 2, name: 'iPhone 15 Pro', category: 'Smartphones', price: 'RS 1,299', stock: 12, status: 'Low Stock' },
+  { id: 3, name: 'PlayStation 5', category: 'Gaming', price: 'RS 499', stock: 0, status: 'Out of Stock' },
+  { id: 4, name: 'MacBook Air M3', category: 'Laptops', price: 'RS 1,199', stock: 8, status: 'Low Stock' },
+  { id: 5, name: 'Samsung Refrigerator', category: 'Appliances', price: 'RS 1,500', stock: 15, status: 'In Stock' },
+  { id: 6, name: 'Sony Headphones', category: 'Audio', price: 'RS 349', stock: 32, status: 'In Stock' },
 ]
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', description: '', category: '' })
+  const [newProduct, setNewProduct] = useState({ 
+    name: '', 
+    realPrice: '', 
+    sellingPrice: '', 
+    stock: '', 
+    description: '', 
+    category: '',
+    specifications: [{ key: '', value: '' }],
+    images: [] as File[]
+  })
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files).slice(0, 4);
+      setNewProduct({ ...newProduct, images: filesArray });
+    }
+  };
+
+  const addSpecification = () => {
+    setNewProduct({
+      ...newProduct,
+      specifications: [...newProduct.specifications, { key: '', value: '' }]
+    });
+  };
+
+  const updateSpecification = (index: number, field: 'key' | 'value', value: string) => {
+    const newSpecs = [...newProduct.specifications];
+    newSpecs[index][field] = value;
+    setNewProduct({ ...newProduct, specifications: newSpecs });
+  };
+
+  const removeSpecification = (index: number) => {
+    const newSpecs = newProduct.specifications.filter((_, i) => i !== index);
+    setNewProduct({ ...newProduct, specifications: newSpecs });
+  };
   const [isAddingCategory, setIsAddingCategory] = useState(false)
 
   const getStatusColor = (status: string) => {
@@ -137,97 +171,159 @@ export default function ProductsPage() {
         ))}
       </div>
 
-      {/* Add Product Modal (Dummy) */}
+      {/* Add Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Add New Product</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
-                <input 
-                  type="text" 
-                  value={newProduct.name}
-                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                  placeholder="e.g. Samsung 65 TV"
-                />
-              </div>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            {/* Sticky Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
+              <h2 className="text-xl font-bold text-gray-900">Add New Product</h2>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
+            {/* Scrollable Body */}
+            <div className="px-6 py-4 overflow-y-auto flex-1">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Price (PKR)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
                   <input 
-                    type="number" 
-                    value={newProduct.price}
-                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    type="text" 
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="0"
+                    placeholder="e.g. Samsung 65 TV"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Initial Stock</label>
-                  <input 
-                    type="number" 
-                    value={newProduct.stock}
-                    onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="0"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
-                {isAddingCategory ? (
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Real Price</label>
                     <input 
-                      type="text" 
-                      value={newProduct.category}
-                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                      placeholder="New category name"
+                      type="number" 
+                      value={newProduct.realPrice}
+                      onChange={(e) => setNewProduct({...newProduct, realPrice: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                      placeholder="0"
                     />
-                    <Button variant="outline" onClick={() => setIsAddingCategory(false)}>Cancel</Button>
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <select 
-                      value={newProduct.category}
-                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                    >
-                      <option value="">Select a category</option>
-                      <option value="Refrigerators">Refrigerators</option>
-                      <option value="Air Conditioners">Air Conditioners</option>
-                      <option value="LED TVs">LED TVs</option>
-                      <option value="Washing Machines">Washing Machines</option>
-                      <option value="Microwaves">Microwaves</option>
-                    </select>
-                    <Button variant="outline" onClick={() => setIsAddingCategory(true)}>+ New</Button>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Selling Price</label>
+                    <input 
+                      type="number" 
+                      value={newProduct.sellingPrice}
+                      onChange={(e) => setNewProduct({...newProduct, sellingPrice: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                      placeholder="0"
+                    />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Initial Stock</label>
+                    <input 
+                      type="number" 
+                      value={newProduct.stock}
+                      onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
-                <textarea 
-                  rows={3}
-                  value={newProduct.description}
-                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                  placeholder="Short product description..."
-                />
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
+                  {isAddingCategory ? (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={newProduct.category}
+                        onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                        placeholder="New category name"
+                      />
+                      <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition" onClick={() => setIsAddingCategory(false)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <select 
+                        value={newProduct.category}
+                        onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                      >
+                        <option value="">Select a category</option>
+                        <option value="Refrigerators">Refrigerators</option>
+                        <option value="Air Conditioners">Air Conditioners</option>
+                        <option value="LED TVs">LED TVs</option>
+                        <option value="Washing Machines">Washing Machines</option>
+                        <option value="Microwaves">Microwaves</option>
+                      </select>
+                      <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition font-medium" onClick={() => setIsAddingCategory(true)}>+ New</button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                  <textarea 
+                    rows={3}
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                    placeholder="Short product description..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Specifications</label>
+                  <div className="space-y-2 mb-2">
+                    {newProduct.specifications.map((spec, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input 
+                          type="text" 
+                          value={spec.key}
+                          onChange={(e) => updateSpecification(index, 'key', e.target.value)}
+                          placeholder="e.g. Storage"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                        />
+                        <input 
+                          type="text" 
+                          value={spec.value}
+                          onChange={(e) => updateSpecification(index, 'value', e.target.value)}
+                          placeholder="e.g. 250GB"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                        />
+                        <button onClick={() => removeSpecification(index)} className="px-2 py-2 border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 transition">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addSpecification} className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-700 bg-white hover:bg-gray-100 transition font-medium flex items-center">
+                    <Plus className="w-3 h-3 mr-1" /> Add Specification
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Product Images (Max 4)</label>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                  />
+                  {newProduct.images.length > 0 && (
+                    <p className="text-xs text-green-600 mt-2">{newProduct.images.length} image(s) selected.</p>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8">
-              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-              <Button className="bg-primary hover:bg-primary/90" onClick={() => {
+            {/* Sticky Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+              <button className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={() => {
                 alert('Dummy action: Product saved!');
+                setNewProduct({ name: '', realPrice: '', sellingPrice: '', stock: '', description: '', category: '', specifications: [{ key: '', value: '' }], images: [] as File[] });
                 setIsAddModalOpen(false);
-              }}>Save Product</Button>
+              }}>Save Product</button>
             </div>
           </div>
         </div>

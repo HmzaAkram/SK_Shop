@@ -7,11 +7,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 const sales = [
-  { id: 'INV-001', customer: 'Ahmad Ali', date: '2024-06-14', items: 2, amount: '$2,850', status: 'Completed' },
-  { id: 'INV-002', customer: 'Fatima Khan', date: '2024-06-13', items: 1, amount: '$1,200', status: 'Pending' },
-  { id: 'INV-003', customer: 'Muhammad Hassan', date: '2024-06-12', items: 3, amount: '$4,500', status: 'Completed' },
-  { id: 'INV-004', customer: 'Aisha Mohamed', date: '2024-06-11', items: 1, amount: '$899', status: 'Completed' },
-  { id: 'INV-005', customer: 'Ibrahim Rashid', date: '2024-06-10', items: 2, amount: '$2,100', status: 'Cancelled' },
+  { id: 'INV-001', customer: 'Ahmad Ali', date: '2024-06-14', items: 2, amount: 'RS 2,850', status: 'Completed' },
+  { id: 'INV-002', customer: 'Fatima Khan', date: '2024-06-13', items: 1, amount: 'RS 1,200', status: 'Pending' },
+  { id: 'INV-003', customer: 'Muhammad Hassan', date: '2024-06-12', items: 3, amount: 'RS 4,500', status: 'Completed' },
+  { id: 'INV-004', customer: 'Aisha Mohamed', date: '2024-06-11', items: 1, amount: 'RS 899', status: 'Completed' },
+  { id: 'INV-005', customer: 'Ibrahim Rashid', date: '2024-06-10', items: 2, amount: 'RS 2,100', status: 'Cancelled' },
 ]
 
 export default function SalesPage() {
@@ -56,7 +56,7 @@ export default function SalesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="text-foreground/70 text-sm font-medium mb-2">Total Sales (This Month)</h3>
-          <p className="text-3xl font-bold text-foreground">$24,500</p>
+          <p className="text-3xl font-bold text-foreground">RS 24,500</p>
           <p className="text-sm text-green-600 dark:text-green-400 mt-2">↑ 12.5% from last month</p>
         </Card>
         <Card className="p-6">
@@ -66,7 +66,7 @@ export default function SalesPage() {
         </Card>
         <Card className="p-6">
           <h3 className="text-foreground/70 text-sm font-medium mb-2">Average Order Value</h3>
-          <p className="text-3xl font-bold text-foreground">$169</p>
+          <p className="text-3xl font-bold text-foreground">RS 169</p>
           <p className="text-sm text-green-600 dark:text-green-400 mt-2">↑ 3.5% from last month</p>
         </Card>
       </div>

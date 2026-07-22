@@ -21,11 +21,22 @@ export default function NewSalePage() {
   // Product Details Modal State
   const [addingProduct, setAddingProduct] = useState<typeof catalog[0] | null>(null)
   const [productDetails, setProductDetails] = useState({ serialNo: '', discount: 0, unitPrice: 0 })
+  const [showInvoice, setShowInvoice] = useState(false)
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [downPayment, setDownPayment] = useState('')
   const [installmentMonths, setInstallmentMonths] = useState(12)
+
+  // Witnesses State
+  const [witnesses, setWitnesses] = useState([{ name: '', phone: '', cnic: '', address: '' }])
+  const addWitness = () => setWitnesses([...witnesses, { name: '', phone: '', cnic: '', address: '' }])
+  const removeWitness = (index: number) => setWitnesses(witnesses.filter((_, i) => i !== index))
+  const updateWitness = (index: number, field: string, value: string) => {
+    const updated = [...witnesses]
+    updated[index] = { ...updated[index], [field]: value }
+    setWitnesses(updated)
+  }
 
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
@@ -106,13 +117,13 @@ export default function NewSalePage() {
               </div>
 
               <h3 className="font-bold text-gray-900 text-sm mb-4">Add New Customer</h3>
-              <div className="grid grid-cols-2 gap-4 mb-auto">
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
                   <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number *</label>
                   <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
                 </div>
                 <div className="col-span-2">
@@ -123,6 +134,46 @@ export default function NewSalePage() {
                   <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
                   <textarea className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between mb-4 border-t border-gray-200 pt-6">
+                <h3 className="font-bold text-gray-900 text-sm">Witnesses (Optional for Installments)</h3>
+                <Button variant="outline" size="sm" onClick={addWitness} className="h-8 text-xs bg-white hover:bg-gray-50 border-gray-200">
+                  <Plus className="w-3 h-3 mr-1" /> Add Witness
+                </Button>
+              </div>
+
+              <div className="space-y-4 mb-auto pb-4">
+                {witnesses.map((w, index) => (
+                  <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-lg relative">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-bold text-[oklch(0.58_0.235_29.234)] uppercase">Witness {index + 1}</span>
+                      {witnesses.length > 1 && (
+                        <button onClick={() => removeWitness(index)} className="text-gray-400 hover:text-red-600 p-1 transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                        <input type="text" value={w.name} onChange={(e) => updateWitness(index, 'name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Name" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
+                        <input type="text" value={w.phone} onChange={(e) => updateWitness(index, 'phone', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Phone" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
+                        <input type="text" value={w.cnic} onChange={(e) => updateWitness(index, 'cnic', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="CNIC" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
+                        <input type="text" value={w.address} onChange={(e) => updateWitness(index, 'address', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Complete address" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -206,8 +257,8 @@ export default function NewSalePage() {
                     </div>
 
                     <div className="flex justify-end gap-3 mt-6">
-                      <Button variant="outline" onClick={() => setAddingProduct(null)}>Cancel</Button>
-                      <Button onClick={confirmAddProduct} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]">Add to Cart</Button>
+                      <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setAddingProduct(null)}>Cancel</button>
+                      <button onClick={confirmAddProduct} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition">Add to Cart</button>
                     </div>
                   </div>
                 </div>
@@ -326,7 +377,7 @@ export default function NewSalePage() {
                 Next Step <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
+              <Button onClick={() => setShowInvoice(true)} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
                 Generate Invoice
               </Button>
             )}
@@ -411,6 +462,98 @@ export default function NewSalePage() {
           </div>
         </div>
       </div>
+
+      {/* Invoice Generation Modal */}
+      {showInvoice && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+              <h2 className="text-xl font-bold text-gray-900">Generated Invoice</h2>
+              <button className="text-gray-400 hover:text-gray-600" onClick={() => setShowInvoice(false)}>Close</button>
+            </div>
+            
+            {/* Printable Area */}
+            <div className="p-8 overflow-y-auto flex-1 bg-white" id="invoice-print-area">
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-black text-gray-900 uppercase">SK Electronics</h1>
+                <p className="text-sm text-gray-500">Invoice #INV-2026-06-22</p>
+              </div>
+
+              <div className="flex justify-between mb-8 text-sm">
+                <div>
+                  <p className="text-gray-500">Bill To:</p>
+                  <p className="font-bold text-gray-900">Tariq Mehmood</p>
+                  <p className="text-gray-600">0300-1234567</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-500">Date:</p>
+                  <p className="font-bold text-gray-900">22 Jun 2026</p>
+                  <p className="text-gray-500 mt-2">Payment Method:</p>
+                  <p className="font-bold text-[oklch(0.58_0.235_29.234)]">{paymentMethod}</p>
+                </div>
+              </div>
+
+              <table className="w-full text-sm mb-6">
+                <thead className="border-b-2 border-gray-900">
+                  <tr>
+                    <th className="text-left py-2">Item</th>
+                    <th className="text-center py-2">Qty</th>
+                    <th className="text-right py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {cart.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="py-3">
+                        <p className="font-bold text-gray-900">{item.product.name}</p>
+                      </td>
+                      <td className="py-3 text-center">{item.qty}</td>
+                      <td className="py-3 text-right font-medium">
+                        {formatPKR(((item.details?.unitPrice ?? item.product.price) - (item.details?.discount ?? 0)) * item.qty)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="border-t-2 border-gray-900 pt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-bold text-gray-700">Subtotal</span>
+                  <span className="font-bold text-gray-900">{formatPKR(subtotal)}</span>
+                </div>
+                
+                {paymentMethod === 'Installment' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="font-bold text-gray-700">Down Payment Paid</span>
+                      <span className="font-bold text-gray-900">{formatPKR(Number(downPayment || 0))}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-gray-200 pt-2">
+                      <span className="font-bold text-red-600">Remaining Balance</span>
+                      <span className="font-bold text-red-600">{formatPKR(remaining)}</span>
+                    </div>
+                  </>
+                )}
+                
+                {paymentMethod !== 'Installment' && (
+                  <div className="flex justify-between text-green-600 border-t border-gray-200 pt-2">
+                    <span className="font-bold">Total Paid</span>
+                    <span className="font-bold">{formatPKR(subtotal)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+              <Button variant="outline" onClick={() => setShowInvoice(false)}>Cancel</Button>
+              <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]" onClick={() => window.print()}>
+                Print Bill
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

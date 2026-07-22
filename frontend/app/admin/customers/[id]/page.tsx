@@ -20,6 +20,7 @@ export default function CustomerProfile() {
     phone: '0300-9876543',
     address: 'House 45, Street 2, Gulberg III, Lahore',
     joinDate: '12 Jan 2024',
+    witness: 'Ali Raza (0300-1122334)',
     outstanding: 45000,
     status: 'Overdue' // 'Good Standing' | 'Overdue'
   }
@@ -108,6 +109,15 @@ export default function CustomerProfile() {
                 <p className="text-sm font-semibold text-gray-900">{customer.joinDate}</p>
               </div>
             </div>
+            {customer.witness && (
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[oklch(0.58_0.235_29.234)] mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Witness (Installment)</p>
+                  <p className="text-sm font-semibold text-gray-900">{customer.witness}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100">
