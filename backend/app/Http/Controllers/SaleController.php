@@ -2,128 +2,102 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSaleRequest;
+use App\Http\Resources\SaleResource;
 use App\Models\Sale;
-use App\Models\SaleItem;
-use App\Models\Customer;
-use App\Models\Product;
-use App\Models\Installment;
+use App\Services\SaleService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class SaleController extends Controller
 {
-    public function index()
+    public function __construct(private readonly SaleService $saleService)
     {
-        return response()->json(Sale::with(['customer', 'items.product', 'installments'])->latest()->get());
     }
 
-    public function show(Sale $sale)
+    public function index(Request $request): JsonResponse
     {
-        return response()->json($sale->load(['customer', 'items.product', 'installments']));
-    }
+        $query = Sale::with(['customer', 'items.product', 'installments']);
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'customer' => 'required|array',
-            'customer.name' => 'required|string',
-            'customer.phone' => 'required|string',
-            'customer.cnic' => 'nullable|string',
-            'customer.address' => 'nullable|string',
-            'customer.guarantor_name' => 'nullable|string',
-            'customer.guarantor_phone' => 'nullable|string',
-            'customer.guarantor_cnic' => 'nullable|string',
+        if ($request->filled('type')) {
+            $query->where('type', $request->string('type'));
+        }
 
-            'sale_date' => 'required|date',
-            'type' => 'required|in:Cash,Installment',
-            'total_amount' => 'required|numeric',
-            'advance_payment' => 'nullable|numeric',
-            'total_installments' => 'nullable|integer',
-            'monthly_installment' => 'nullable|numeric',
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->integer('customer_id'));
+        }
 
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric',
-            'items.*.subtotal' => 'required|numeric',
+        if ($request->filled('from')) {
+            $query->where('sale_date', '>=', $request->date('from')->format('Y-m-d'));
+        }
+
+        if ($request->filled('to')) {
+            $query->where('sale_date', '<=', $request->date('to')->format('Y-m-d'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $sales = $query->latest()->paginate(15);
+        $sales->getCollection()->transform(fn (Sale $sale) => new SaleResource($sale));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sales fetched successfully',
+            'data' => $sales->items(),
+            'meta' => [
+                'current_page' => $sales->currentPage(),
+                'last_page' => $sales->lastPage(),
+                'per_page' => $sales->perPage(),
+                'total' => $sales->total(),
+            ],
         ]);
+    }
 
+    public function show(Sale $sale): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Sale fetched successfully',
+            'data' => new SaleResource($sale->load(['customer', 'items.product', 'installments'])),
+        ]);
+    }
+
+    public function store(StoreSaleRequest $request): JsonResponse
+    {
         try {
-            DB::beginTransaction();
-
-            // Find or Create Customer by Phone
-            $customer = Customer::firstOrCreate(
-                ['phone' => $validated['customer']['phone']],
-                $validated['customer']
-            );
-
-            // Generate sequential invoice number (0001, 0002, ...)
-            $lastSale = Sale::orderBy('id', 'desc')->first();
-            $nextNumber = $lastSale ? intval($lastSale->invoice_number) + 1 : 1;
-            $invoiceNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
-            // Create Sale
-            $sale = Sale::create([
-                'customer_id' => $customer->id,
-                'invoice_number' => $invoiceNumber,
-                'sale_date' => $validated['sale_date'],
-                'type' => $validated['type'],
-                'total_amount' => $validated['total_amount'],
-                'advance_payment' => $validated['advance_payment'] ?? 0,
-                'total_installments' => $validated['total_installments'],
-                'monthly_installment' => $validated['monthly_installment'],
-            ]);
-
-            // Add Items and Deduct Stock
-            foreach ($validated['items'] as $itemData) {
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $itemData['product_id'],
-                    'quantity' => $itemData['quantity'],
-                    'unit_price' => $itemData['unit_price'],
-                    'subtotal' => $itemData['subtotal'],
-                ]);
-
-                // Deduct Stock
-                $product = Product::findOrFail($itemData['product_id']);
-                if ($product->stock < $itemData['quantity']) {
-                    throw new \Exception("Insufficient stock for product: {$product->name}");
-                }
-                $product->decrement('stock', $itemData['quantity']);
-            }
-
-            // Auto-generate installment records if type is Installment
-            if ($validated['type'] === 'Installment' && !empty($validated['total_installments'])) {
-                $monthlyAmount = $validated['monthly_installment'];
-                $totalInstallments = $validated['total_installments'];
-                $saleDate = Carbon::parse($validated['sale_date']);
-
-                for ($i = 1; $i <= $totalInstallments; $i++) {
-                    Installment::create([
-                        'sale_id' => $sale->id,
-                        'installment_number' => $i,
-                        'amount' => $monthlyAmount,
-                        'due_date' => $saleDate->copy()->addMonths($i)->format('Y-m-d'),
-                        'status' => 'Pending',
-                    ]);
-                }
-            }
-
-            DB::commit();
+            $sale = $this->saleService->createSale($request->validated());
 
             return response()->json([
                 'success' => true,
                 'message' => 'Sale created successfully',
-                'data' => $sale->load(['customer', 'items.product', 'installments'])
+                'data' => new SaleResource($sale),
             ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create sale',
-                'error' => $e->getMessage()
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Sale creation failed', [
+                'message' => $e->getMessage(),
+                'payload' => $request->except(['customer.cnic', 'customer.guarantor_cnic']),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create sale. Please try again.',
             ], 500);
         }
     }

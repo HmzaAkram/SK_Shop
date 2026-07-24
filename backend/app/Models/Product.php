@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -25,10 +26,30 @@ class Product extends Model
     protected $casts = [
         'specifications' => 'array',
         'images' => 'array',
+        'real_price' => 'decimal:2',
+        'selling_price' => 'decimal:2',
     ];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+
+    /**
+     * Full public URLs for the stored image paths.
+     *
+     * @return array<int, string>
+     */
+    public function getImageUrlsAttribute(): array
+    {
+        return collect($this->images ?? [])
+            ->map(fn (string $path) => Storage::disk('public')->url($path))
+            ->values()
+            ->all();
     }
 }
