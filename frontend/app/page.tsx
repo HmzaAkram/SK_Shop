@@ -2,11 +2,31 @@
 
 import Link from 'next/link'
 import { ArrowRight, MapPin, Phone, MessageCircle, Star, FileText } from 'lucide-react'
-// Mock Data
-const featuredProducts: any[] = []
-const categories: any[] = []
+import { useState, useEffect } from 'react'
+import AuthModal from './components/AuthModal'
+import { fetchApi } from '@/lib/api'
 
 export default function Home() {
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          fetchApi('/products'),
+          fetchApi('/categories')
+        ])
+        if (prodRes.success) setFeaturedProducts(prodRes.data.data.slice(0, 4))
+        if (catRes.success) setCategories(catRes.data.slice(0, 6))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadData()
+  }, [])
+
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
@@ -123,18 +143,25 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-6 grid-rows-2 gap-4 h-[400px]">
-          {categories.map((cat, idx) => (
-            <Link key={idx} href={`/products?category=${cat.name}`} className={`${cat.colSpan} ${cat.bg} rounded-3xl p-6 group relative overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between border border-transparent hover:border-gray-200`}>
-              <img src={cat.img} alt={cat.name} className="w-16 h-16 object-contain group-hover:scale-110 transition-transform origin-bottom-left" />
+          {categories.map((cat, idx) => {
+            const bgs = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-orange-50', 'bg-pink-50', 'bg-yellow-50']
+            const colSpans = ['md:col-span-2 md:row-span-2', 'md:col-span-2', 'md:col-span-2', 'md:col-span-4 md:row-span-1', 'md:col-span-2', 'md:col-span-2']
+            const bg = bgs[idx % bgs.length]
+            const colSpan = colSpans[idx % colSpans.length]
+            
+            return (
+            <Link key={idx} href={`/products?category=${cat.name}`} className={`${colSpan} ${bg} rounded-3xl p-6 group relative overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between border border-transparent hover:border-gray-200`}>
+              <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center font-bold text-2xl text-gray-500 group-hover:scale-110 transition-transform origin-bottom-left">{cat.name.charAt(0)}</div>
               <div>
                 <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{cat.name}</h3>
-                <p className="text-sm text-gray-500 font-medium">{cat.count}</p>
+                <p className="text-sm text-gray-500 font-medium">Explore</p>
               </div>
               <div className="absolute bottom-6 right-6 w-10 h-10 bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                 <ArrowRight className="w-5 h-5 text-gray-900" />
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       </section>
 
@@ -150,22 +177,26 @@ export default function Home() {
             {featuredProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-2xl p-4 border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all group flex flex-col">
                 <div className="relative h-48 bg-gray-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                  <img src={product.img} alt={product.name} className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-500" />
-                  {product.tag && (
+                  <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 font-bold group-hover:scale-110 transition-transform duration-500">Image</div>
+                  {product.stock > product.alert_stock ? (
                     <span className="absolute top-3 left-3 bg-[oklch(0.58_0.235_29.234)] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      {product.tag}
+                      In Stock
                     </span>
-                  )}
+                  ) : product.stock > 0 ? (
+                    <span className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      Low Stock
+                    </span>
+                  ) : null}
                 </div>
                 <div className="flex-1 flex flex-col">
-                  <div className="text-xs text-gray-400 font-bold uppercase mb-1">{product.brand}</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase mb-1">{product.category?.name || '-'}</div>
                   <h3 className="font-bold text-gray-900 mb-2 leading-tight line-clamp-2 hover:text-[oklch(0.58_0.235_29.234)] cursor-pointer">
                     <Link href={`/products/${product.id}`}>{product.name}</Link>
                   </h3>
                   <div className="mt-auto pt-4 border-t border-gray-50 flex items-end justify-between">
                     <div>
-                      {product.oldPrice && <div className="text-xs text-gray-400 line-through font-semibold mb-0.5">{formatPKR(product.oldPrice)}</div>}
-                      <div className="text-lg font-black text-[oklch(0.58_0.235_29.234)]">{formatPKR(product.price)}</div>
+                      {Number(product.real_price) > Number(product.selling_price) && <div className="text-xs text-gray-400 line-through font-semibold mb-0.5">{formatPKR(product.real_price)}</div>}
+                      <div className="text-lg font-black text-[oklch(0.58_0.235_29.234)]">{formatPKR(product.selling_price)}</div>
                     </div>
                     <Link href={`/products/${product.id}`} className="w-10 h-10 bg-gray-100 hover:bg-[oklch(0.58_0.235_29.234)] hover:text-white rounded-full flex items-center justify-center transition-colors">
                       <ArrowRight className="w-4 h-4" />
@@ -207,7 +238,7 @@ export default function Home() {
                 <li><Link href="/products" className="hover:text-white transition">All Products</Link></li>
                 <li><Link href="/products" className="hover:text-white transition">Installment Plans</Link></li>
                 <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
-                <li><Link href="/admin" className="hover:text-white transition text-[oklch(0.58_0.235_29.234)]">Admin Panel</Link></li>
+                <li><button onClick={() => setShowAuthModal(true)} className="hover:text-white transition text-[oklch(0.58_0.235_29.234)]">Admin Panel</button></li>
               </ul>
             </div>
             
@@ -248,6 +279,7 @@ export default function Home() {
          className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center">
         <MessageCircle className="w-7 h-7 fill-current" />
       </a>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   )
 }

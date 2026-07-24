@@ -3,25 +3,35 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, Trash2, ChevronRight, User, ShoppingCart, CreditCard, CheckCircle2 } from 'lucide-react'
-import { useState } from 'react'
-
-const catalog: any[] = []
+import { useState, useEffect } from 'react'
+import { fetchApi } from '@/lib/api'
 
 export default function NewSalePage() {
   const [step, setStep] = useState(1)
+  const [catalog, setCatalog] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchApi('/products').then(res => {
+      if (res.success) setCatalog(res.data.data)
+    }).catch(console.error)
+  }, [])
 
   // Cart State
-  const [cart, setCart] = useState<{ product: typeof catalog[0], qty: number, details?: { serialNo: string, discount: number, unitPrice: number } }[]>([])
+  const [cart, setCart] = useState<{ product: any, qty: number, details?: { serialNo: string, discount: number, unitPrice: number } }[]>([])
 
   // Product Details Modal State
   const [addingProduct, setAddingProduct] = useState<typeof catalog[0] | null>(null)
   const [productDetails, setProductDetails] = useState({ serialNo: '', discount: 0, unitPrice: 0 })
   const [showInvoice, setShowInvoice] = useState(false)
+  const [createdSale, setCreatedSale] = useState<any>(null)
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [downPayment, setDownPayment] = useState('')
   const [installmentMonths, setInstallmentMonths] = useState(12)
+
+  // Customer State
+  const [customer, setCustomer] = useState({ name: '', phone: '', cnic: '', address: '' })
 
   // Witnesses State
   const [witnesses, setWitnesses] = useState([{ name: '', phone: '', cnic: '', address: '' }])
@@ -37,14 +47,14 @@ export default function NewSalePage() {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + ((item.details?.unitPrice ?? item.product.price) * item.qty - (item.details?.discount ?? 0) * item.qty), 0)
+  const subtotal = cart.reduce((sum, item) => sum + ((item.details?.unitPrice ?? item.product.selling_price) * item.qty - (item.details?.discount ?? 0) * item.qty), 0)
   const remaining = paymentMethod === 'Installment' ? subtotal - Number(downPayment || 0) : 0
   const monthly = paymentMethod === 'Installment' ? remaining / installmentMonths : 0
 
   const openProductModal = (product: typeof catalog[0]) => {
     if (product.stock === 0) return
     setAddingProduct(product)
-    setProductDetails({ serialNo: '', discount: 0, unitPrice: product.price })
+    setProductDetails({ serialNo: '', discount: 0, unitPrice: product.selling_price })
   }
 
   const confirmAddProduct = () => {
@@ -112,22 +122,22 @@ export default function NewSalePage() {
               </div>
 
               <h3 className="font-bold text-gray-900 text-sm mb-4">Add New Customer</h3>
-              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
+                  <input type="text" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number *</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
+                  <input type="text" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="XXXXX-XXXXXXX-X" />
+                  <input type="text" value={customer.cnic} onChange={e => setCustomer({...customer, cnic: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="XXXXX-XXXXXXX-X" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                  <textarea className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
+                  <textarea value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
                 </div>
               </div>
 
@@ -199,7 +209,7 @@ export default function NewSalePage() {
                     </div>
                     <h3 className="font-bold text-gray-900 text-sm mb-3 line-clamp-2">{product.name}</h3>
                     <div className="mt-auto flex items-center justify-between">
-                      <span className="font-black text-[oklch(0.58_0.235_29.234)]">{formatPKR(product.price)}</span>
+                      <span className="font-black text-[oklch(0.58_0.235_29.234)]">{formatPKR(product.selling_price)}</span>
                       <Button
                         size="sm"
                         onClick={() => openProductModal(product)}
@@ -372,8 +382,46 @@ export default function NewSalePage() {
                 Next Step <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={() => setShowInvoice(true)} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
-                Generate Invoice
+              <Button onClick={async () => {
+                try {
+                  const res = await fetchApi('/sales', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      customer: {
+                        name: customer.name,
+                        phone: customer.phone,
+                        cnic: customer.cnic,
+                        address: customer.address,
+                        guarantor_name: witnesses[0]?.name,
+                        guarantor_phone: witnesses[0]?.phone,
+                        guarantor_cnic: witnesses[0]?.cnic,
+                      },
+                      sale_date: new Date().toISOString().split('T')[0],
+                      type: paymentMethod,
+                      total_amount: subtotal,
+                      advance_payment: paymentMethod === 'Installment' ? Number(downPayment || 0) : 0,
+                      total_installments: paymentMethod === 'Installment' ? installmentMonths : null,
+                      monthly_installment: paymentMethod === 'Installment' ? monthly : null,
+                      items: cart.map(i => ({
+                        product_id: i.product.id,
+                        quantity: i.qty,
+                        unit_price: i.details?.unitPrice ?? i.product.selling_price,
+                        subtotal: ((i.details?.unitPrice ?? i.product.selling_price) * i.qty) - (i.details?.discount ?? 0) * i.qty
+                      }))
+                    })
+                  })
+                  if (res.success) {
+                    setCreatedSale(res.data)
+                    setShowInvoice(true)
+                  } else {
+                    alert(res.message || 'Failed to save sale')
+                  }
+                } catch (err) {
+                  console.error(err)
+                  alert('Failed to save sale.')
+                }
+              }} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
+                Complete Sale
               </Button>
             )}
           </div>
@@ -395,7 +443,7 @@ export default function NewSalePage() {
                   <div className="flex-1">
                     <p className="font-bold text-gray-900 text-xs line-clamp-1 mb-1">{item.product.name}</p>
                     <div className="flex justify-between items-end">
-                      <p className="text-[oklch(0.58_0.235_29.234)] font-black text-sm">{formatPKR(item.product.price)}</p>
+                      <p className="text-[oklch(0.58_0.235_29.234)] font-black text-sm">{formatPKR(item.product.selling_price)}</p>
                       <div className="flex items-center gap-2 border border-gray-200 rounded">
                         <button
                           className="px-2 py-0.5 text-gray-500 hover:bg-gray-100"
@@ -471,14 +519,14 @@ export default function NewSalePage() {
             <div className="p-8 overflow-y-auto flex-1 bg-white" id="invoice-print-area">
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-black text-gray-900 uppercase">SK Electronics</h1>
-                <p className="text-sm text-gray-500">Invoice #INV-2026-06-22</p>
+                <p className="text-sm text-gray-500">Invoice #INV-{createdSale?.invoice_number || '----'}</p>
               </div>
 
               <div className="flex justify-between mb-8 text-sm">
                 <div>
                   <p className="text-gray-500">Bill To:</p>
-                  <p className="font-bold text-gray-900">Tariq Mehmood</p>
-                  <p className="text-gray-600">0300-1234567</p>
+                  <p className="font-bold text-gray-900">{customer.name || 'N/A'}</p>
+                  <p className="text-gray-600">{customer.phone || 'N/A'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-gray-500">Date:</p>
@@ -504,7 +552,7 @@ export default function NewSalePage() {
                       </td>
                       <td className="py-3 text-center">{item.qty}</td>
                       <td className="py-3 text-right font-medium">
-                        {formatPKR(((item.details?.unitPrice ?? item.product.price) - (item.details?.discount ?? 0)) * item.qty)}
+                        {formatPKR(((item.details?.unitPrice ?? item.product.selling_price) - (item.details?.discount ?? 0)) * item.qty)}
                       </td>
                     </tr>
                   ))}

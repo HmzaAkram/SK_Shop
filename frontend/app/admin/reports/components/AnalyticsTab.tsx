@@ -1,68 +1,64 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
-import { Calendar, TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { FilterExportBar } from './FilterExportBar'
+import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { fetchApi } from '@/lib/api'
 
-const categoryData: any[] = []
-
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']
-
-const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const years = ['2023', '2024', '2025', '2026']
+const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#06b6d4', '#8b5cf6']
 
 export function AnalyticsTab() {
-  const [selectedMonth, setSelectedMonth] = useState('March')
-  const [selectedYear, setSelectedYear] = useState('2026')
+  const [reportData, setReportData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const getFinancialData = (month: string, year: string) => {
-    return { sales: 0, grossProfit: 0, expenses: 0 }
-  }
-
-  const currentFinance = getFinancialData(selectedMonth, selectedYear)
-  const netProfit = currentFinance.grossProfit - currentFinance.expenses
-
-  const chartData = [
-    { period: 'Week 1', revenue: currentFinance.sales * 0.2, profit: currentFinance.grossProfit * 0.2 },
-    { period: 'Week 2', revenue: currentFinance.sales * 0.25, profit: currentFinance.grossProfit * 0.25 },
-    { period: 'Week 3', revenue: currentFinance.sales * 0.3, profit: currentFinance.grossProfit * 0.3 },
-    { period: 'Week 4', revenue: currentFinance.sales * 0.25, profit: currentFinance.grossProfit * 0.25 },
-  ]
+  useEffect(() => {
+    fetchApi('/reports/summary').then(res => {
+      if (res.success !== false) setReportData(res)
+      setLoading(false)
+    }).catch(err => {
+      console.error(err)
+      setLoading(false)
+    })
+  }, [])
 
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
 
+  const totalSales = reportData?.total_sales || 0
+  const totalExpenses = reportData?.total_expenses || 0
+  const profit = reportData?.profit || 0
+
+  // Build monthly chart data
+  const monthlySales = reportData?.monthly_sales || []
+  const monthlyExpenses = reportData?.monthly_expenses || []
+
+  const chartData = monthlySales.map((s: any) => {
+    const expMonth = monthlyExpenses.find((e: any) => e.month === s.month)
+    return {
+      period: s.month,
+      revenue: Number(s.total),
+      expenses: Number(expMonth?.total || 0),
+      profit: Number(s.total) - Number(expMonth?.total || 0),
+    }
+  })
+
+  // Sales breakdown by type for pie chart
+  const cashSales = reportData?.cash_sales || 0
+  const installmentSales = reportData?.installment_sales || 0
+  const pieData = [
+    { name: 'Cash Sales', value: Number(cashSales) || 0 },
+    { name: 'Installment Sales', value: Number(installmentSales) || 0 },
+  ].filter(d => d.value > 0)
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <FilterExportBar />
-
-      {/* Monthly Financial Summary */}
+      {/* Financial Summary */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-foreground">Monthly Profit & Loss</h2>
-          <div className="flex gap-3">
-            <select 
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
-            >
-              {months.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <select 
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
-            >
-              {years.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
+          <h2 className="text-xl font-bold text-foreground">Profit & Loss Summary</h2>
+          <span className="text-sm text-gray-500">{reportData?.from} → {reportData?.to}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -71,15 +67,15 @@ export function AnalyticsTab() {
               <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Activity className="w-5 h-5" /></div>
               <p className="text-sm font-bold text-gray-500 uppercase">Total Sales</p>
             </div>
-            <p className="text-2xl font-black text-blue-700">{formatPKR(currentFinance.sales)}</p>
+            <p className="text-2xl font-black text-blue-700">{loading ? '...' : formatPKR(totalSales)}</p>
           </div>
 
           <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><TrendingUp className="w-5 h-5" /></div>
-              <p className="text-sm font-bold text-gray-500 uppercase">Gross Profit</p>
+              <p className="text-sm font-bold text-gray-500 uppercase">Total Orders</p>
             </div>
-            <p className="text-2xl font-black text-purple-700">{formatPKR(currentFinance.grossProfit)}</p>
+            <p className="text-2xl font-black text-purple-700">{loading ? '...' : reportData?.sales_count || 0}</p>
           </div>
 
           <div className="p-4 rounded-xl bg-red-50 border border-red-100">
@@ -87,7 +83,7 @@ export function AnalyticsTab() {
               <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="w-5 h-5" /></div>
               <p className="text-sm font-bold text-gray-500 uppercase">Total Expenses</p>
             </div>
-            <p className="text-2xl font-black text-red-700">{formatPKR(currentFinance.expenses)}</p>
+            <p className="text-2xl font-black text-red-700">{loading ? '...' : formatPKR(totalExpenses)}</p>
           </div>
 
           <div className="p-4 rounded-xl bg-green-50 border border-green-100">
@@ -95,7 +91,7 @@ export function AnalyticsTab() {
               <div className="p-2 bg-green-100 rounded-lg text-green-600"><DollarSign className="w-5 h-5" /></div>
               <p className="text-sm font-bold text-gray-500 uppercase">Net Profit</p>
             </div>
-            <p className="text-2xl font-black text-green-700">{formatPKR(netProfit)}</p>
+            <p className={`text-2xl font-black ${profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>{loading ? '...' : formatPKR(profit)}</p>
           </div>
         </div>
       </Card>
@@ -103,8 +99,7 @@ export function AnalyticsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 md:col-span-2">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-foreground">Trend for {selectedMonth} {selectedYear}</h2>
-            {/* Last 6 months button removed as requested, chart is now connected to the selected month */}
+            <h2 className="text-xl font-bold text-foreground">Monthly Revenue & Profit</h2>
           </div>
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
@@ -121,54 +116,39 @@ export function AnalyticsTab() {
                 }}
               />
               <Legend />
-              <Line type="monotone" name="Sales" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={3} />
+              <Line type="monotone" name="Revenue" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={3} />
               <Line type="monotone" name="Profit" dataKey="profit" stroke="#22c55e" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="p-6 md:col-span-1">
-          <h2 className="text-xl font-bold text-foreground mb-6">Sales by Category</h2>
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name} ${value}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {COLORS.map((color, index) => (
-                  <Cell key={`cell-${index}`} fill={color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => `${value}%`} />
-            </PieChart>
-          </ResponsiveContainer>
+          <h2 className="text-xl font-bold text-foreground mb-6">Sales Breakdown</h2>
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => formatPKR(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[350px] text-gray-400 text-sm">No sales data yet</div>
+          )}
         </Card>
       </div>
-
-      {/* Top Products */}
-      <Card className="p-6">
-        <h2 className="text-lg font-bold text-foreground mb-4">Top Selling Products</h2>
-        <div className="space-y-3">
-          {([] as any[]).map((product) => (
-            <div key={product.rank} className="flex items-center justify-between p-4 bg-background rounded-lg border border-border hover:border-primary/50 transition">
-              <div className="flex items-center gap-4">
-                <span className="text-lg font-bold text-primary w-8 text-center">#{product.rank}</span>
-                <div>
-                  <p className="font-semibold text-foreground">{product.name}</p>
-                  <p className="text-sm text-foreground/70">{product.sales} sales</p>
-                </div>
-              </div>
-              <span className="font-bold text-foreground">{product.revenue}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   )
 }

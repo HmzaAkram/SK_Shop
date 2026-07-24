@@ -3,12 +3,77 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Search, Upload, X } from 'lucide-react'
-import { useState } from 'react'
-
-const products: any[] = []
+import { useState, useEffect } from 'react'
+import { fetchApi } from '@/lib/api'
 
 export default function ProductsPage() {
+  const [productsList, setProductsList] = useState<any[]>([])
+  const [categoriesList, setCategoriesList] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const fetchData = async () => {
+    try {
+      const [prodRes, catRes] = await Promise.all([
+        fetchApi('/products'),
+        fetchApi('/categories')
+      ])
+      if (prodRes.success) setProductsList(prodRes.data.data) // Laravel pagination
+      if (catRes.success) setCategoriesList(catRes.data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const handleSaveProduct = async () => {
+    try {
+      // Create category if new
+      let category_id = null;
+      if (isAddingCategory && newProduct.category) {
+        const catRes = await fetchApi('/categories', {
+          method: 'POST',
+          body: JSON.stringify({ name: newProduct.category })
+        });
+        if (catRes.success) {
+          category_id = catRes.data.id;
+          setCategoriesList([...categoriesList, catRes.data]);
+        }
+      } else if (newProduct.category) {
+        const cat = categoriesList.find(c => c.name === newProduct.category);
+        if (cat) category_id = cat.id;
+      }
+
+      const res = await fetchApi('/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newProduct.name,
+          category_id: category_id,
+          real_price: parseFloat(newProduct.realPrice),
+          selling_price: parseFloat(newProduct.sellingPrice),
+          stock: parseInt(newProduct.stock),
+          description: newProduct.description,
+          specifications: newProduct.specifications.filter(s => s.key && s.value),
+        })
+      });
+
+      if (res.success) {
+        setProductsList([res.data, ...productsList]);
+        setNewProduct({ name: '', realPrice: '', sellingPrice: '', stock: '', description: '', category: '', specifications: [{ key: '', value: '' }], images: [] as File[] });
+        setIsAddModalOpen(false);
+      }
+    } catch (err: any) {
+      console.error(err);
+      const msg = err?.errors ? Object.values(err.errors).flat().join('\n') : (err?.message || 'Failed to save product');
+      alert(msg);
+    }
+  }
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newProduct, setNewProduct] = useState({ 
     name: '', 
@@ -106,15 +171,19 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {products.map((product) => (
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-foreground/50">Loading products...</td></tr>
+              ) : productsList.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-foreground/50">No products found.</td></tr>
+              ) : productsList.map((product) => (
                 <tr key={product.id} className="hover:bg-muted/50 transition">
                   <td className="px-6 py-4 text-foreground font-medium">{product.name}</td>
-                  <td className="px-6 py-4 text-foreground/70">{product.category}</td>
-                  <td className="px-6 py-4 text-foreground font-semibold">{product.price}</td>
+                  <td className="px-6 py-4 text-foreground/70">{product.category?.name || '-'}</td>
+                  <td className="px-6 py-4 text-foreground font-semibold">RS {Number(product.selling_price).toLocaleString()}</td>
                   <td className="px-6 py-4 text-center text-foreground">{product.stock}</td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusColor(product.status)}`}>
-                      {product.status}
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusColor(product.stock > product.alert_stock ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock')}`}>
+                      {product.stock > product.alert_stock ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -136,19 +205,19 @@ export default function ProductsPage() {
 
       {/* Products Cards - Mobile */}
       <div className="md:hidden space-y-4">
-        {products.map((product) => (
+        {productsList.map((product) => (
           <Card key={product.id} className="p-4">
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="font-bold text-foreground">{product.name}</h3>
-                <p className="text-sm text-foreground/70">{product.category}</p>
+                <p className="text-sm text-foreground/70">{product.category?.name || '-'}</p>
               </div>
-              <span className={`text-xs font-semibold px-2 py-1 rounded ${getStatusColor(product.status)}`}>
-                {product.status}
-              </span>
+              <div className={`text-xs font-semibold px-2 py-1 rounded-md ${getStatusColor(product.stock > product.alert_stock ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock')}`}>
+                {product.stock > product.alert_stock ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock'}
+              </div>
             </div>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-lg font-bold text-primary">{product.price}</span>
+              <span className="text-lg font-bold text-primary">RS {Number(product.selling_price).toLocaleString()}</span>
               <span className="text-sm text-foreground/70">Stock: {product.stock}</span>
             </div>
             <div className="flex gap-2">
@@ -241,11 +310,9 @@ export default function ProductsPage() {
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
                       >
                         <option value="">Select a category</option>
-                        <option value="Refrigerators">Refrigerators</option>
-                        <option value="Air Conditioners">Air Conditioners</option>
-                        <option value="LED TVs">LED TVs</option>
-                        <option value="Washing Machines">Washing Machines</option>
-                        <option value="Microwaves">Microwaves</option>
+                        {categoriesList.map(cat => (
+                          <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
                       </select>
                       <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition font-medium" onClick={() => setIsAddingCategory(true)}>+ New</button>
                     </div>
@@ -312,11 +379,7 @@ export default function ProductsPage() {
             {/* Sticky Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
               <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
-              <button className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={() => {
-                alert('Dummy action: Product saved!');
-                setNewProduct({ name: '', realPrice: '', sellingPrice: '', stock: '', description: '', category: '', specifications: [{ key: '', value: '' }], images: [] as File[] });
-                setIsAddModalOpen(false);
-              }}>Save Product</button>
+              <button className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={handleSaveProduct}>Save Product</button>
             </div>
           </div>
         </div>

@@ -3,11 +3,32 @@
 import React, { useState } from 'react'
 import { Menu, X, LogOut, LayoutDashboard, Package, Users, ShoppingCart, CreditCard, TrendingUp, Bell, Plus, ChevronDown, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { getAuthToken, removeAuthToken, fetchApi } from '@/lib/api'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    const token = getAuthToken()
+    if (!token) {
+      router.push('/')
+    }
+  }, [router, pathname])
+
+  const handleLogout = async () => {
+    try {
+      await fetchApi('/logout', { method: 'POST' })
+    } catch (e) {
+      // ignore
+    } finally {
+      removeAuthToken()
+      router.push('/')
+    }
+  }
 
   const today = new Date().toLocaleDateString('en-PK', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
@@ -99,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-[10px] text-white/40 truncate">Admin</p>
             </div>
           </div>
-          <button className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-white/50 hover:text-white hover:bg-white/8 text-xs transition">
+          <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-white/50 hover:text-white hover:bg-white/8 text-xs transition">
             <LogOut className="w-3.5 h-3.5" />
             Sign Out
           </button>

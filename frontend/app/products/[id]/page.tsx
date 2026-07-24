@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { ArrowLeft, Check, ShieldCheck, Truck, MessageCircle, PhoneCall, Info } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { fetchApi } from '@/lib/api'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -11,32 +12,30 @@ export default function ProductDetailPage() {
   
   const [activeTab, setActiveTab] = useState('description')
   const [activeImage, setActiveImage] = useState(0)
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock product data based on ID
-  const product = {
-    id: id as string,
-    name: 'Dawlance 12 CFT Refrigerator (Chrome Series)',
-    sku: 'SK-REF-DWL-001',
-    brand: 'Dawlance',
-    category: 'Refrigerators',
-    price: 82500,
-    oldPrice: 89000,
-    stock: 4,
-    images: ['🧊', '🥶', '❄️', '💧'],
-    specs: [
-      { label: 'Capacity', value: '12 Cubic Feet' },
-      { label: 'Cooling Type', value: 'Direct Cool' },
-      { label: 'Compressor', value: 'Non-Inverter' },
-      { label: 'Energy Rating', value: 'A+' },
-      { label: 'Warranty', value: '12 Years Compressor, 1 Year Parts' },
-      { label: 'Color', value: 'Silver Chrome' },
-    ],
-    description: 'The Dawlance Chrome Series refrigerator offers superior cooling performance with European technology. Designed specifically for Pakistani power conditions, it operates efficiently even on low voltage. Features a 30% larger freezer portion compared to standard models, perfect for storing meat and frozen goods long-term.'
-  }
+  useEffect(() => {
+    fetchApi(`/products/${id}`).then(res => {
+      if (res.success) {
+        setProduct(res.data)
+      }
+      setLoading(false)
+    }).catch(err => {
+      console.error(err)
+      setLoading(false)
+    })
+  }, [id])
 
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
+
+  if (loading) return <div className="min-h-screen bg-[oklch(0.98_0_0)] flex items-center justify-center">Loading...</div>
+  if (!product) return <div className="min-h-screen bg-[oklch(0.98_0_0)] flex items-center justify-center">Product not found</div>
+
+  const productImages = product.images || ['📦']
+  const specs = product.specifications || []
 
   return (
     <div className="min-h-screen bg-[oklch(0.98_0_0)] font-sans text-gray-900 pb-20">
@@ -48,7 +47,7 @@ export default function ProductDetailPage() {
             Back to Products
           </Link>
           <div className="hidden sm:block text-sm font-semibold text-gray-400">
-            Home / Products / {product.category} / <span className="text-[oklch(0.35_0.165_260)]">{product.sku}</span>
+            Home / Products / {product.category?.name} / <span className="text-[oklch(0.35_0.165_260)]">PRD-{product.id}</span>
           </div>
         </div>
       </nav>
@@ -60,10 +59,10 @@ export default function ProductDetailPage() {
             {/* Left: Images (45%) */}
             <div className="md:w-[45%] bg-gray-50 p-8 flex flex-col border-b md:border-b-0 md:border-r border-gray-200">
               <div className="flex-1 bg-white rounded-2xl border border-gray-200 flex items-center justify-center mb-6 min-h-[400px] shadow-inner text-9xl">
-                {product.images[activeImage]}
+                {productImages[activeImage]}
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
+                {productImages.map((img: string, idx: number) => (
                   <button 
                     key={idx}
                     onClick={() => setActiveImage(idx)}
@@ -83,8 +82,8 @@ export default function ProductDetailPage() {
             <div className="md:w-[55%] p-8 md:p-12 flex flex-col">
               <div className="mb-6 border-b border-gray-100 pb-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{product.brand}</span>
-                  <span className="text-gray-400 text-sm font-medium">SKU: {product.sku}</span>
+                  <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{product.category?.name || '-'}</span>
+                  <span className="text-gray-400 text-sm font-medium">SKU: PRD-{product.id}</span>
                 </div>
                 <h1 className="text-3xl md:text-4xl font-black text-[oklch(0.35_0.165_260)] leading-[1.1] mb-6 tracking-tight">
                   {product.name}
@@ -92,11 +91,11 @@ export default function ProductDetailPage() {
                 
                 <div className="flex items-end gap-4 mb-4">
                   <div className="text-4xl font-black text-[oklch(0.58_0.235_29.234)]">
-                    {formatPKR(product.price)}
+                    {formatPKR(product.selling_price)}
                   </div>
-                  {product.oldPrice && (
+                  {Number(product.real_price) > Number(product.selling_price) && (
                     <div className="text-xl text-gray-400 line-through font-semibold pb-1">
-                      {formatPKR(product.oldPrice)}
+                      {formatPKR(product.real_price)}
                     </div>
                   )}
                 </div>
@@ -206,9 +205,9 @@ export default function ProductDetailPage() {
                 <div className="max-w-3xl bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
                   <table className="w-full text-left text-sm">
                     <tbody className="divide-y divide-gray-200">
-                      {product.specs.map((spec, idx) => (
+                      {specs.map((spec: any, idx: number) => (
                         <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <th className="px-6 py-4 font-bold text-gray-900 w-1/3">{spec.label}</th>
+                          <th className="px-6 py-4 font-bold text-gray-900 w-1/3">{spec.key}</th>
                           <td className="px-6 py-4 text-gray-600">{spec.value}</td>
                         </tr>
                       ))}

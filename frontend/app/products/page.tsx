@@ -2,17 +2,35 @@
 
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ChevronDown, Check, LayoutGrid, List } from 'lucide-react'
-import { useState } from 'react'
-
-const products: any[] = []
+import { useState, useEffect } from 'react'
+import { fetchApi } from '@/lib/api'
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
-  
-  const categories: any[] = []
-  const brands: any[] = []
+  const [productsList, setProductsList] = useState<any[]>([])
+  const [categoriesList, setCategoriesList] = useState<any[]>([])
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          fetchApi('/products'),
+          fetchApi('/categories')
+        ])
+        if (prodRes.success) setProductsList(prodRes.data.data)
+        if (catRes.success) {
+          setCategoriesList([{name: 'All'}, ...catRes.data])
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadData()
+  }, [])
+
+  const brands: string[] = Array.from(new Set(productsList.map(p => p.category?.name || 'Other')))
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands(prev => 
@@ -23,6 +41,13 @@ export default function ProductsPage() {
   const formatPKR = (amount: number) => {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
+
+  const filteredProducts = productsList.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCat = selectedCategory === 'All' || p.category?.name === selectedCategory
+    const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(p.category?.name) // using category as brand for now
+    return matchesSearch && matchesCat && matchesBrand
+  })
 
   return (
     <div className="min-h-screen bg-[oklch(0.98_0_0)] font-sans text-gray-900">
@@ -64,17 +89,17 @@ export default function ProductsPage() {
             <div className="mb-8">
               <h3 className="font-bold text-sm text-gray-900 uppercase tracking-wider mb-4">Categories</h3>
               <div className="space-y-2">
-                {categories.map((cat) => (
+                {categoriesList.map((cat) => (
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    key={cat.id || cat.name}
+                    onClick={() => setSelectedCategory(cat.name)}
                     className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      selectedCategory === cat 
+                      selectedCategory === cat.name 
                         ? 'bg-[oklch(0.58_0.235_29.234)]/10 text-[oklch(0.58_0.235_29.234)]' 
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
-                    {cat}
+                    {cat.name}
                   </button>
                 ))}
               </div>
@@ -115,7 +140,7 @@ export default function ProductsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h1 className="text-2xl font-black text-[oklch(0.35_0.165_260)] tracking-tight">
               {selectedCategory === 'All' ? 'All Appliances' : selectedCategory}
-              <span className="text-base font-semibold text-gray-400 ml-2">({products.length})</span>
+              <span className="text-base font-semibold text-gray-400 ml-2">({filteredProducts.length})</span>
             </h1>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -136,31 +161,29 @@ export default function ProductsPage() {
 
           {/* Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {products.map((product, idx) => (
+            {filteredProducts.map((product, idx) => {
+              const inStock = product.stock > 0
+              return (
               <div 
                 key={product.id} 
-                className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-gray-300 transition-all group flex flex-col ${
-                  product.featured ? 'sm:col-span-2 sm:flex-row' : ''
-                }`}
+                className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-gray-300 transition-all group flex flex-col`}
               >
-                <div className={`relative bg-gray-50 flex items-center justify-center overflow-hidden ${
-                  product.featured ? 'sm:w-1/2 h-64 sm:h-auto' : 'h-56'
-                }`}>
-                  <img src={product.img} alt={product.name} className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-500" />
-                  {!product.inStock && (
+                <div className={`relative bg-gray-50 flex items-center justify-center overflow-hidden h-56`}>
+                  <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 font-bold group-hover:scale-110 transition-transform duration-500">Image</div>
+                  {!inStock && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
                       <span className="bg-red-500 text-white font-bold text-sm px-4 py-1.5 rounded-full shadow-lg">Out of Stock</span>
                     </div>
                   )}
                 </div>
                 
-                <div className={`p-5 flex-1 flex flex-col ${product.featured ? 'sm:w-1/2 justify-center' : ''}`}>
+                <div className={`p-5 flex-1 flex flex-col`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-gray-500 font-bold tracking-wider uppercase bg-gray-100 px-2 py-0.5 rounded">{product.sku}</span>
-                    <span className="text-[10px] text-[oklch(0.58_0.235_29.234)] font-bold tracking-wider uppercase">{product.brand}</span>
+                    <span className="text-[10px] text-gray-500 font-bold tracking-wider uppercase bg-gray-100 px-2 py-0.5 rounded">PRD-{product.id}</span>
+                    <span className="text-[10px] text-[oklch(0.58_0.235_29.234)] font-bold tracking-wider uppercase">{product.category?.name || '-'}</span>
                   </div>
                   
-                  <h3 className={`font-bold text-gray-900 mb-3 leading-tight ${product.featured ? 'text-2xl' : 'text-lg line-clamp-2'}`}>
+                  <h3 className={`font-bold text-gray-900 mb-3 leading-tight text-lg line-clamp-2`}>
                     <Link href={`/products/${product.id}`} className="hover:text-[oklch(0.58_0.235_29.234)] transition-colors">{product.name}</Link>
                   </h3>
                   
@@ -168,31 +191,30 @@ export default function ProductsPage() {
                     <div className="flex items-end justify-between mb-4">
                       <div>
                         <div className="text-xs text-gray-500 font-medium mb-0.5">Cash Price</div>
-                        <div className={`font-black text-[oklch(0.35_0.165_260)] ${product.featured ? 'text-3xl' : 'text-xl'}`}>
-                          {formatPKR(product.price)}
+                        <div className={`font-black text-[oklch(0.35_0.165_260)] text-xl`}>
+                          {formatPKR(product.selling_price)}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] text-gray-500 font-medium mb-0.5">Installment From</div>
-                        <div className="font-bold text-[oklch(0.58_0.235_29.234)] text-sm">{formatPKR(product.price / 12)}/mo</div>
+                        <div className="font-bold text-[oklch(0.58_0.235_29.234)] text-sm">{formatPKR(product.selling_price / 12)}/mo</div>
                       </div>
                     </div>
                     
                     <Link 
-                      href={product.inStock ? `https://wa.me/923001234567?text=Hi, I am interested in ${product.name}` : '#'}
-                      target={product.inStock ? "_blank" : undefined}
-                      className={`block w-full py-2.5 rounded-lg text-center text-sm font-bold transition-all ${
-                        product.inStock 
-                          ? 'bg-[#25D366]/10 text-[#1da851] hover:bg-[#25D366] hover:text-white border border-[#25D366]/20' 
+                      href={inStock ? `https://wa.me/923001234567?text=Hi, I am interested in ${product.name}` : '#'}
+                      className={`block w-full py-3 rounded-xl text-center font-bold text-sm transition-all ${
+                        inStock 
+                          ? 'bg-gray-900 text-white hover:bg-[oklch(0.58_0.235_29.234)] shadow-lg hover:shadow-[oklch(0.58_0.235_29.234)]/30' 
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      {product.inStock ? '📱 WhatsApp Inquiry' : 'Unavailable'}
+                      {inStock ? 'Order via WhatsApp' : 'Out of Stock'}
                     </Link>
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
         
