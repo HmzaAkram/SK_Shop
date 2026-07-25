@@ -9,12 +9,10 @@ class Expense extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'title',
-        'amount',
-        'expense_date',
-        'payment_method',
-        'category',
-        'notes',
+    protected $fillable = ['title', 'amount', 'expense_date', 'payment_method', 'category', 'notes'];
+
+    protected $casts = [
+        'amount'       => 'decimal:2',
+        'expense_date' => 'date:Y-m-d',
     ];
 }

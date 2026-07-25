@@ -40,10 +40,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Categories (write operations are admin-only; GET /categories is public above)
     Route::post('/categories', [CategoryController::class, 'store']);
+    Route::put('/categories/{category}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
     // Products (write operations are admin-only; GET routes are public above)
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
     // Customers
     Route::get('/customers', [CustomerController::class, 'index']);

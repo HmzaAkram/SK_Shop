@@ -10,11 +10,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $adminEmail = config('auth.admin_email', 'admin@skshop.com');
+
         User::updateOrCreate(
-            ['email' => 'admin@skshop.com'],
+            ['email' => $adminEmail],
             [
-                'name' => 'Admin',
-                'password' => Hash::make('0300'),
+                'name'     => 'Admin',
+                'password' => Hash::make(env('ADMIN_PASSWORD', '0300')),
             ]
         );
     }

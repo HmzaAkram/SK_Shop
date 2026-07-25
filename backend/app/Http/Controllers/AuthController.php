@@ -2,58 +2,71 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'password' => 'required|string',
+            'password' => ['required', 'string'],
         ]);
 
-        // Find the admin user
-        $admin = User::where('email', 'admin@skshop.com')->first();
+        $adminEmail = config('auth.admin_email', 'admin@skshop.com');
+        $admin      = User::where('email', $adminEmail)->first();
 
-        if (!$admin || !Auth::attempt(['email' => 'admin@skshop.com', 'password' => $request->password])) {
+        if (!$admin || !Auth::attempt(['email' => $adminEmail, 'password' => $request->password])) {
+            Log::warning('Failed admin login attempt', ['ip' => $request->ip()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid password',
-                'errors' => ['password' => ['Incorrect password']]
+                'errors'  => ['password' => ['Incorrect password']],
             ], 401);
         }
 
+        $admin->tokens()->where('name', 'admin-token')->delete();
         $token = $admin->createToken('admin-token')->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
-            'data' => [
+            'data'    => [
                 'token' => $token,
-                'user' => $admin
-            ]
+                'user'  => [
+                    'id'    => $admin->id,
+                    'name'  => $admin->name,
+                    'email' => $admin->email,
+                ],
+            ],
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Logged out successfully',
-            'data' => []
+            'data'    => [],
         ]);
     }
 
-    public function profile(Request $request)
+    public function profile(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
             'message' => 'Profile fetched successfully',
-            'data' => $request->user()
+            'data'    => [
+                'id'    => $request->user()->id,
+                'name'  => $request->user()->name,
+                'email' => $request->user()->email,
+            ],
         ]);
     }
 }

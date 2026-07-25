@@ -2,35 +2,59 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(): JsonResponse
     {
-        $categories = Category::all();
-        
+        $categories = Category::withCount('products')->orderBy('name')->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Categories fetched successfully',
-            'data' => $categories
+            'data' => CategoryResource::collection($categories),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
-            'description' => 'nullable|string',
-        ]);
-
-        $category = Category::create($validated);
+        $category = Category::create($request->validated());
 
         return response()->json([
             'success' => true,
             'message' => 'Category created successfully',
-            'data' => $category
+            'data' => new CategoryResource($category),
         ], 201);
+    }
+
+    public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
+    {
+        $category->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category updated successfully',
+            'data' => new CategoryResource($category),
+        ]);
+    }
+
+    public function destroy(Category $category): JsonResponse
+    {
+        $productCount = $category->products()->count();
+
+        $category->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => $productCount > 0
+                ? "Category deleted. {$productCount} product(s) were uncategorized rather than removed."
+                : 'Category deleted successfully',
+            'data' => [],
+        ]);
     }
 }
