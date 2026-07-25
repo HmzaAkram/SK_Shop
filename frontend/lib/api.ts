@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:8000/api';
+﻿export const API_BASE_URL = 'http://localhost:8000/api';
 
 export const getAuthToken = () => {
   if (typeof window !== 'undefined') {
@@ -37,7 +37,12 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     headers,
   });
 
-  const data = await response.json();
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    // ignore JSON parse errors for empty responses
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -46,7 +51,7 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
         window.location.href = '/';
       }
     }
-    throw data;
+    throw data || { message: 'API Error', status: response.status };
   }
 
   return data;

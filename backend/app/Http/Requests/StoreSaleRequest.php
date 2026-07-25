@@ -25,7 +25,8 @@ class StoreSaleRequest extends FormRequest
 
             'sale_date' => ['required', 'date'],
             'type' => ['required', 'in:Cash,Installment'],
-            'total_amount' => ['required', 'numeric', 'min:0'],
+            // total_amount is computed server-side; accept but not required from client
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
             'advance_payment' => ['nullable', 'numeric', 'min:0'],
             'total_installments' => ['nullable', 'integer', 'min:1', 'required_if:type,Installment'],
             'monthly_installment' => ['nullable', 'numeric', 'min:0', 'required_if:type,Installment'],
@@ -33,8 +34,10 @@ class StoreSaleRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.subtotal' => ['required', 'numeric', 'min:0'],
+            // unit_price/subtotal in payload are ignored by backend and recomputed; discount is optional
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.subtotal' => ['nullable', 'numeric', 'min:0'],
+            'items.*.discount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

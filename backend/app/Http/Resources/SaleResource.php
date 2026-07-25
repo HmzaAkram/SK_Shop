@@ -20,10 +20,11 @@ class SaleResource extends JsonResource
             'advance_payment' => $this->advance_payment,
             'total_installments' => $this->total_installments,
             'monthly_installment' => $this->monthly_installment,
-            'items' => SaleItemResource::collection($this->whenLoaded('items')),
-            'installments' => InstallmentResource::collection($this->whenLoaded('installments')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+                        'total_cogs' => $this->total_cogs,
+                        'items' => SaleItemResource::collection($this->whenLoaded('items')),
+                        'installments' => InstallmentResource::collection($this->whenLoaded('installments')),
+                        'created_at' => $this->created_at,
+                        'updated_at' => $this->updated_at,
         ];
     }
 }

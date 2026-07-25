@@ -33,14 +33,21 @@ export function AnalyticsTab() {
   // Build monthly chart data
   const monthlySales = reportData?.monthly_sales || []
   const monthlyExpenses = reportData?.monthly_expenses || []
+  const monthlyCogs = reportData?.monthly_cogs || []
 
   const chartData = monthlySales.map((s: any) => {
     const expMonth = monthlyExpenses.find((e: any) => e.month === s.month)
+    const cogsMonth = monthlyCogs.find((c: any) => c.month === s.month)
+    const revenue = Number(s.total)
+    const cogs = Number(cogsMonth?.total || 0)
+    const expenses = Number(expMonth?.total || 0)
+    const netProfit = revenue - cogs - expenses
     return {
       period: s.month,
-      revenue: Number(s.total),
-      expenses: Number(expMonth?.total || 0),
-      profit: Number(s.total) - Number(expMonth?.total || 0),
+      revenue,
+      cogs,
+      expenses,
+      net_profit: netProfit,
     }
   })
 
@@ -117,7 +124,8 @@ export function AnalyticsTab() {
               />
               <Legend />
               <Line type="monotone" name="Revenue" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={3} />
-              <Line type="monotone" name="Profit" dataKey="profit" stroke="#22c55e" strokeWidth={3} />
+              <Line type="monotone" name="COGS" dataKey="cogs" stroke="#f59e0b" strokeWidth={3} />
+              <Line type="monotone" name="Net Profit" dataKey="net_profit" stroke="#22c55e" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

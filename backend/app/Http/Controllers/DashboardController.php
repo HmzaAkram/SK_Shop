@@ -6,13 +6,17 @@ use App\Models\Customer;
 use App\Models\Installment;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
     public function stats(): JsonResponse
     {
-        $totalSales     = Sale::sum('total_amount');
+        // Revenue (canonical): sum of sale_items.subtotal
+        $totalRevenue = SaleItem::selectRaw('COALESCE(SUM(subtotal),0) as total')->join('sales', 'sale_items.sale_id', '=', 'sales.id')->value('total');
+        $totalCogs = SaleItem::selectRaw('COALESCE(SUM(cost_price * quantity),0) as total')->join('sales', 'sale_items.sale_id', '=', 'sales.id')->value('total');
+
         $totalOrders    = Sale::count();
         $totalCustomers = Customer::count();
         $totalProducts  = Product::count();
@@ -53,7 +57,8 @@ class DashboardController extends Controller
             ]);
 
         return response()->json([
-            'total_sales'           => (float) $totalSales,
+            'total_sales'           => (float) $totalRevenue,
+            'total_cogs'            => (float) $totalCogs,
             'total_orders'          => $totalOrders,
             'total_customers'       => $totalCustomers,
             'total_products'        => $totalProducts,

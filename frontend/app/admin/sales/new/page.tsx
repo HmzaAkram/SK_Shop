@@ -383,6 +383,10 @@ export default function NewSalePage() {
               </Button>
             ) : (
               <Button onClick={async () => {
+                if (!customer.phone || !customer.phone.trim()) {
+                  alert('Customer phone is required.');
+                  return;
+                }
                 try {
                   const res = await fetchApi('/sales', {
                     method: 'POST',

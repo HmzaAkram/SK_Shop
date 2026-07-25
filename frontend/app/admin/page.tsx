@@ -40,7 +40,8 @@ export default function AdminDashboard() {
 
   const totalSales = stats?.total_sales || 0
   const totalExpenses = reportData?.total_expenses || 0
-  const profit = totalSales - totalExpenses
+  // reportData.profit is now net profit (Revenue - COGS - Expenses)
+  const profit = reportData?.profit ?? (totalSales - totalExpenses)
   const overdueInstallments = stats?.overdue_installments || []
   const upcomingInstallments = stats?.upcoming_installments || []
   const lowStockProducts = stats?.low_stock_products || []
@@ -57,10 +58,16 @@ export default function AdminDashboard() {
   // Build chart data from monthly report
   const monthlyChartData = (reportData?.monthly_sales || []).map((s: any) => {
     const expMonth = (reportData?.monthly_expenses || []).find((e: any) => e.month === s.month)
+    const cogsMonth = (reportData?.monthly_cogs || []).find((c: any) => c.month === s.month)
+    const revenue = s.total || 0
+    const cogs = cogsMonth?.total || 0
+    const expenses = expMonth?.total || 0
+    const netProfit = revenue - cogs - expenses
     return {
       month: s.month,
-      revenue: s.total,
-      profit: s.total - (expMonth?.total || 0),
+      revenue,
+      cogs,
+      net_profit: netProfit,
     }
   })
 
@@ -109,8 +116,9 @@ export default function AdminDashboard() {
                   formatter={(value: number) => formatPKR(value)}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                <Bar dataKey="revenue" name="Revenue" fill="oklch(0.35 0.165 260)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="profit" name="Profit" fill="oklch(0.58 0.235 29.234)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="cogs" name="COGS" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="net_profit" name="Net Profit" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>

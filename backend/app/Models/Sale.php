@@ -11,7 +11,7 @@ class Sale extends Model
 
     protected $fillable = [
         'customer_id', 'invoice_number', 'sale_date', 'type',
-        'total_amount', 'advance_payment', 'total_installments', 'monthly_installment',
+        'total_amount', 'advance_payment', 'total_installments', 'monthly_installment', 'total_cogs',
     ];
 
     protected $casts = [
@@ -20,6 +20,7 @@ class Sale extends Model
         'advance_payment'     => 'decimal:2',
         'monthly_installment' => 'decimal:2',
         'total_installments'  => 'integer',
+        'total_cogs'          => 'decimal:2',
     ];
 
     public function customer() { return $this->belongsTo(Customer::class); }

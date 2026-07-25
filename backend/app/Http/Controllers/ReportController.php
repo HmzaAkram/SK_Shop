@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Expense;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,25 +16,35 @@ class ReportController extends Controller
         $from = $request->get('from', now()->startOfMonth()->format('Y-m-d'));
         $to   = $request->get('to', now()->format('Y-m-d'));
 
-        $salesAggregates = Sale::whereBetween('sale_date', [$from, $to])
-            ->selectRaw('
-                SUM(total_amount) as total_sales,
-                COUNT(*) as sales_count,
-                SUM(CASE WHEN type = ? THEN total_amount ELSE 0 END) as cash_sales,
-                SUM(CASE WHEN type = ? THEN total_amount ELSE 0 END) as installment_sales
-            ', ['Cash', 'Installment'])
-            ->first();
+        // Revenue: canonical source -> sum of sale_items.subtotal for date range
+        $totalRevenue = SaleItem::whereHas('sale', function ($q) use ($from, $to) {
+            $q->whereBetween('sale_date', [$from, $to]);
+        })->selectRaw('COALESCE(SUM(subtotal),0) as total')->value('total');
+
+        // COGS: sum of cost_price * quantity for sale items in range
+        $totalCogs = SaleItem::whereHas('sale', function ($q) use ($from, $to) {
+            $q->whereBetween('sale_date', [$from, $to]);
+        })->selectRaw('COALESCE(SUM(cost_price * quantity),0) as total')->value('total');
 
         $totalExpenses      = (float) Expense::whereBetween('expense_date', [$from, $to])->sum('amount');
-        $totalSales         = (float) ($salesAggregates->total_sales ?? 0);
-        $profit             = $totalSales - $totalExpenses;
+
+        $grossProfit = (float) $totalRevenue - (float) $totalCogs;
+        $netProfit = $grossProfit - $totalExpenses;
+
         $sixMonthsAgo       = now()->subMonths(6)->startOfMonth();
 
-        $monthlySales = Sale::select(
-                DB::raw("DATE_FORMAT(sale_date, '%Y-%m') as month"),
-                DB::raw('SUM(total_amount) as total')
-            )
-            ->where('sale_date', '>=', $sixMonthsAgo)
+        // Monthly revenue (from sale_items.subtotal)
+        $monthlySales = SaleItem::selectRaw("DATE_FORMAT(sales.sale_date, '%Y-%m') as month, SUM(sale_items.subtotal) as total")
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.sale_date', '>=', $sixMonthsAgo)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Monthly COGS
+        $monthlyCogs = SaleItem::selectRaw("DATE_FORMAT(sales.sale_date, '%Y-%m') as month, SUM(sale_items.cost_price * sale_items.quantity) as total")
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.sale_date', '>=', $sixMonthsAgo)
             ->groupBy('month')
             ->orderBy('month')
             ->get();
@@ -55,7 +66,8 @@ class ReportController extends Controller
                 products.id,
                 products.name,
                 SUM(sale_items.quantity) as total_quantity,
-                SUM(sale_items.subtotal) as total_revenue
+                SUM(sale_items.subtotal) as total_revenue,
+                SUM(sale_items.cost_price * sale_items.quantity) as total_cogs
             ')
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_revenue')
@@ -65,13 +77,16 @@ class ReportController extends Controller
         return response()->json([
             'from'              => $from,
             'to'                => $to,
-            'total_sales'       => $totalSales,
-            'total_expenses'    => $totalExpenses,
-            'profit'            => $profit,
-            'sales_count'       => (int) ($salesAggregates->sales_count ?? 0),
-            'cash_sales'        => (float) ($salesAggregates->cash_sales ?? 0),
-            'installment_sales' => (float) ($salesAggregates->installment_sales ?? 0),
+            'total_sales'       => (float) $totalRevenue,
+            'total_cogs'        => (float) $totalCogs,
+            'total_expenses'    => (float) $totalExpenses,
+            'gross_profit'      => (float) $grossProfit,
+            'profit'            => (float) $netProfit, // keep 'profit' key but this is now net profit
+            'sales_count'       => (int) (Sale::whereBetween('sale_date', [$from, $to])->count()),
+            'cash_sales'        => (float) Sale::whereBetween('sale_date', [$from, $to])->where('type','Cash')->sum('total_amount'),
+            'installment_sales' => (float) Sale::whereBetween('sale_date', [$from, $to])->where('type','Installment')->sum('total_amount'),
             'monthly_sales'     => $monthlySales,
+            'monthly_cogs'      => $monthlyCogs,
             'monthly_expenses'  => $monthlyExpenses,
             'top_products'      => $topProducts,
         ]);
