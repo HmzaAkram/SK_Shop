@@ -12,7 +12,7 @@ export default function NewSalePage() {
 
   useEffect(() => {
     fetchApi('/products').then(res => {
-      if (res.success) setCatalog(res.data.data)
+      if (res.success) setCatalog(res.data ?? [])
     }).catch(console.error)
   }, [])
 
