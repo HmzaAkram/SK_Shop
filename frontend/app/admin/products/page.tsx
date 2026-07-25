@@ -18,7 +18,7 @@ export default function ProductsPage() {
         fetchApi('/products'),
         fetchApi('/categories')
       ])
-      if (prodRes.success) setProductsList(prodRes.data.data) // Laravel pagination
+      if (prodRes.success) setProductsList(prodRes.data ?? [])
       if (catRes.success) setCategoriesList(catRes.data)
     } catch (err) {
       console.error(err)
@@ -205,7 +205,7 @@ export default function ProductsPage() {
 
       {/* Products Cards - Mobile */}
       <div className="md:hidden space-y-4">
-        {productsList.map((product) => (
+        {(productsList ?? []).map((product) => (
           <Card key={product.id} className="p-4">
             <div className="flex justify-between items-start mb-3">
               <div>
