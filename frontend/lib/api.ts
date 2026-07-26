@@ -22,17 +22,20 @@ export const removeAuthToken = () => {
 export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
   
+  const isFormData = options.body instanceof FormData;
+
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     'Accept': 'application/json',
     ...(options.headers || {}),
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    // Use Bearer token when available (string concatenation to avoid backtick issues)
+    headers['Authorization'] = 'Bearer ' + token;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(API_BASE_URL + endpoint, {
     ...options,
     headers,
   });

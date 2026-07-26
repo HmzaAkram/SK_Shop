@@ -30,7 +30,7 @@ export default function ProductsPage() {
     loadData()
   }, [])
 
-  const brands: string[] = Array.from(new Set(productsList.map(p => p.category?.name || 'Other')))
+  const brands: string[] = Array.from(new Set((productsList || []).map(p => p?.brand || 'Other')))
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands(prev => 
@@ -42,10 +42,10 @@ export default function ProductsPage() {
     return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(amount)
   }
 
-  const filteredProducts = productsList.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = (productsList || []).filter(p => {
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCat = selectedCategory === 'All' || p.category?.name === selectedCategory
-    const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(p.category?.name) // using category as brand for now
+    const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(p.brand || 'Other')
     return matchesSearch && matchesCat && matchesBrand
   })
 

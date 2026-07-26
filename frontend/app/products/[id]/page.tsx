@@ -85,6 +85,11 @@ export default function ProductDetailPage() {
                   <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{product.category?.name || '-'}</span>
                   <span className="text-gray-400 text-sm font-medium">SKU: PRD-{product.id}</span>
                 </div>
+                {product.brand && (
+                <div className="mb-2">
+                  <span className="text-sm text-gray-600 font-medium">Brand: {product.brand}</span>
+                </div>
+                )}
                 <h1 className="text-3xl md:text-4xl font-black text-[oklch(0.35_0.165_260)] leading-[1.1] mb-6 tracking-tight">
                   {product.name}
                 </h1>

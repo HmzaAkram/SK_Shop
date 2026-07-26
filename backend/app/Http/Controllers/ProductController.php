@@ -22,14 +22,19 @@ class ProductController extends Controller
             $search = $request->string('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%");
             });
         }
-
+ 
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('name', $request->string('category'));
             });
+        }
+ 
+        if ($request->filled('brand')) {
+            $query->where('brand', $request->string('brand'));
         }
 
         $products = $query->latest()->paginate(10);
@@ -55,6 +60,7 @@ class ProductController extends Controller
 
         $product = Product::create([
             'category_id' => $validated['category_id'] ?? null,
+            'brand' => $validated['brand'] ?? null,
             'name' => $validated['name'],
             'sku' => $validated['sku'] ?? null,
             'real_price' => $validated['real_price'],
@@ -117,6 +123,7 @@ class ProductController extends Controller
 
         $product->fill([
             'category_id' => $validated['category_id'] ?? $product->category_id,
+            'brand' => array_key_exists('brand', $validated) ? $validated['brand'] : $product->brand,
             'name' => $validated['name'] ?? $product->name,
             'sku' => array_key_exists('sku', $validated) ? $validated['sku'] : $product->sku,
             'real_price' => $validated['real_price'] ?? $product->real_price,

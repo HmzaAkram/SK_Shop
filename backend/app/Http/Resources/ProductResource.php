@@ -13,6 +13,7 @@ class ProductResource extends JsonResource
             'id' => $this->id,
             'category_id' => $this->category_id,
             'category' => new CategoryResource($this->whenLoaded('category')),
+            'brand' => $this->brand,
             'name' => $this->name,
             'sku' => $this->sku,
             'real_price' => $this->real_price,
@@ -23,6 +24,8 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'specifications' => $this->specifications,
             'images' => $this->image_urls,
+            // raw storage paths for admin operations (remove/replace)
+            'images_paths' => $this->images,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

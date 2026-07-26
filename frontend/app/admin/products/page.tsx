@@ -9,17 +9,20 @@ import { fetchApi } from '@/lib/api'
 export default function ProductsPage() {
   const [productsList, setProductsList] = useState<any[]>([])
   const [categoriesList, setCategoriesList] = useState<any[]>([])
+  const [brandsList, setBrandsList] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
     try {
-      const [prodRes, catRes] = await Promise.all([
+      const [prodRes, catRes, brandRes] = await Promise.all([
         fetchApi('/products'),
-        fetchApi('/categories')
+        fetchApi('/categories'),
+        fetchApi('/brands')
       ])
       if (prodRes.success) setProductsList(prodRes.data ?? [])
       if (catRes.success) setCategoriesList(catRes.data)
+      if (brandRes.success) setBrandsList(brandRes.data || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -30,6 +33,87 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const [existingImages, setExistingImages] = useState<string[]>([])
+  const [removeImages, setRemoveImages] = useState<string[]>([])
+
+  const handleEditClick = (product: any) => {
+    setIsEditing(true)
+    setEditingProductId(product.id)
+    setIsAddModalOpen(true)
+    setNewProduct({
+      name: product.name || '',
+      brand: product.brand || '',
+      realPrice: product.real_price ?? '',
+      sellingPrice: product.selling_price ?? '',
+      stock: product.stock ?? '',
+      description: product.description || '',
+      category: product.category?.name || '',
+      specifications: (product.specifications && product.specifications.length) ? product.specifications : [{ key: '', value: '' }],
+      images: [] as File[],
+    })
+    setExistingImages(product.images_paths || [])
+    setRemoveImages([])
+    setCurrentStock(product.stock ?? 0)
+  }
+
+  const toggleRemoveImage = (path: string) => {
+    if (removeImages.includes(path)) {
+      setRemoveImages(removeImages.filter(p => p !== path))
+    } else {
+      setRemoveImages([...removeImages, path])
+    }
+  }
+
+  const clearModal = () => {
+    setIsAddModalOpen(false)
+    setIsEditing(false)
+    setEditingProductId(null)
+    setNewProduct({ name: '', brand: '', realPrice: '', sellingPrice: '', stock: '', description: '', category: '', specifications: [{ key: '', value: '' }], images: [] as File[] })
+    setExistingImages([])
+    setRemoveImages([])
+    setIsAddingCategory(false)
+  }
+
+  const handleRefillStock = async () => {
+    if (!isEditing || !editingProductId) return;
+    // Validation: required, integer, positive
+    if (refillQty === '') {
+      alert('Please enter a refill quantity');
+      return;
+    }
+    if (!/^[0-9]+$/.test(refillQty)) {
+      alert('Refill quantity must be a positive integer');
+      return;
+    }
+    const qty = parseInt(refillQty, 10);
+    if (qty <= 0) {
+      alert('Refill quantity must be greater than zero');
+      return;
+    }
+
+    const newStock = (currentStock ?? parseInt(String(newProduct.stock || '0'), 10) ) + qty;
+
+    try {
+      const res = await fetchApi(`/products/${editingProductId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ stock: newStock }),
+      });
+      if (res.success) {
+        alert('Stock updated successfully');
+        // Update local states
+        setCurrentStock(newStock);
+        setNewProduct({ ...newProduct, stock: String(newStock) });
+        setRefillQty('');
+        await fetchData();
+      } else {
+        alert(res.message || 'Failed to update stock');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'Failed to update stock');
+    }
+  }
 
   const handleSaveProduct = async () => {
     try {
@@ -49,23 +133,67 @@ export default function ProductsPage() {
         if (cat) category_id = cat.id;
       }
 
-      const res = await fetchApi('/products', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: newProduct.name,
-          category_id: category_id,
-          real_price: parseFloat(newProduct.realPrice),
-          selling_price: parseFloat(newProduct.sellingPrice),
-          stock: parseInt(newProduct.stock),
-          description: newProduct.description,
-          specifications: newProduct.specifications.filter(s => s.key && s.value),
-        })
-      });
+      // If adding brand via + New, create it first and append to brand list
+      if (isAddingBrand && newProduct.brand) {
+        try {
+          const bRes = await fetchApi('/brands', {
+            method: 'POST',
+            body: JSON.stringify({ name: newProduct.brand })
+          });
+          if (bRes.success) {
+            setBrandsList([...brandsList, bRes.data]);
+            setNewProduct({ ...newProduct, brand: bRes.data.name });
+            setIsAddingBrand(false);
+          }
+        } catch (e) {
+          console.error(e);
+          alert('Failed to create brand');
+          return;
+        }
+      }
+
+      // Build multipart form data so images can be uploaded. Append specifications as indexed fields for Laravel to parse.
+      const formData = new FormData()
+      formData.append('name', newProduct.name)
+      formData.append('brand', newProduct.brand)
+      if (category_id) formData.append('category_id', String(category_id))
+      formData.append('real_price', String(parseFloat(newProduct.realPrice || '0')))
+      formData.append('selling_price', String(parseFloat(newProduct.sellingPrice || '0')))
+      formData.append('stock', String(parseInt(String(newProduct.stock || '0'))))
+      formData.append('description', newProduct.description || '')
+
+      const specs = (newProduct.specifications || []).filter((s: any) => s.key && s.value)
+      specs.forEach((s: any, idx: number) => {
+        formData.append(`specifications[${idx}][key]`, s.key)
+        formData.append(`specifications[${idx}][value]`, s.value)
+      })
+
+      // New uploads
+      for (const file of (newProduct.images || [] as File[])) {
+        formData.append('images[]', file)
+      }
+
+      // If editing, include remove_images and _method override for PUT
+      let url = '/products'
+      let method: any = 'POST'
+      if (isEditing && editingProductId) {
+        url = `/products/${editingProductId}`
+        method = 'POST' // use method override for form-data
+        formData.append('_method', 'PUT')
+        for (const p of removeImages) {
+          formData.append('remove_images[]', p)
+        }
+      }
+
+      const res = await fetchApi(url, {
+        method,
+        body: formData,
+      })
 
       if (res.success) {
-        setProductsList([res.data, ...productsList]);
-        setNewProduct({ name: '', realPrice: '', sellingPrice: '', stock: '', description: '', category: '', specifications: [{ key: '', value: '' }], images: [] as File[] });
-        setIsAddModalOpen(false);
+        // Refresh list from server to get normalized data
+        await fetchData()
+        clearModal()
       }
     } catch (err: any) {
       console.error(err);
@@ -75,8 +203,11 @@ export default function ProductsPage() {
   }
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [newProduct, setNewProduct] = useState({ 
     name: '', 
+    brand: '',
     realPrice: '', 
     sellingPrice: '', 
     stock: '', 
@@ -111,6 +242,25 @@ export default function ProductsPage() {
     setNewProduct({ ...newProduct, specifications: newSpecs });
   };
   const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [isAddingBrand, setIsAddingBrand] = useState(false)
+  const [currentStock, setCurrentStock] = useState<number | null>(null)
+  const [refillQty, setRefillQty] = useState('')
+
+  const handleDeleteProduct = async (product: any) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const res = await fetchApi(`/products/${product.id}`, { method: 'DELETE' });
+      if (res.success) {
+        // Refresh list
+        await fetchData();
+      } else {
+        alert(res.message || 'Failed to delete product');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'Failed to delete product');
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,6 +313,7 @@ export default function ProductsPage() {
             <thead className="bg-card border-b border-border">
               <tr>
                 <th className="text-left px-6 py-4 font-semibold text-foreground">Product Name</th>
+                <th className="text-left px-6 py-4 font-semibold text-foreground">Brand</th>
                 <th className="text-left px-6 py-4 font-semibold text-foreground">Category</th>
                 <th className="text-left px-6 py-4 font-semibold text-foreground">Price</th>
                 <th className="text-center px-6 py-4 font-semibold text-foreground">Stock</th>
@@ -178,6 +329,7 @@ export default function ProductsPage() {
               ) : productsList.map((product) => (
                 <tr key={product.id} className="hover:bg-muted/50 transition">
                   <td className="px-6 py-4 text-foreground font-medium">{product.name}</td>
+                  <td className="px-6 py-4 text-foreground/70">{product.brand || '-'}</td>
                   <td className="px-6 py-4 text-foreground/70">{product.category?.name || '-'}</td>
                   <td className="px-6 py-4 text-foreground font-semibold">RS {Number(product.selling_price).toLocaleString()}</td>
                   <td className="px-6 py-4 text-center text-foreground">{product.stock}</td>
@@ -188,10 +340,13 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex gap-2 justify-center">
-                      <button className="p-2 hover:bg-muted rounded-lg transition">
+                      <a href={`/products/${product.id}`} target="_blank" rel="noreferrer" className="p-2 hover:bg-muted rounded-lg transition" title="View">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </a>
+                      <button onClick={() => handleEditClick(product)} className="p-2 hover:bg-muted rounded-lg transition" title="Edit">
                         <Edit className="w-4 h-4 text-blue-600" />
                       </button>
-                      <button className="p-2 hover:bg-muted rounded-lg transition">
+                      <button onClick={() => handleDeleteProduct(product)} className="p-2 hover:bg-muted rounded-lg transition" title="Delete">
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
@@ -221,11 +376,14 @@ export default function ProductsPage() {
               <span className="text-sm text-foreground/70">Stock: {product.stock}</span>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => window.open(`/products/${product.id}`, '_blank')}>
+                View
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEditClick(product)}>
                 <Edit className="w-4 h-4 mr-1" />
                 Edit
               </Button>
-              <Button size="sm" variant="outline" className="text-red-600">
+              <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleDeleteProduct(product)}>
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
@@ -286,6 +444,25 @@ export default function ProductsPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
                       placeholder="0"
                     />
+
+                    {/* Stock Refill (only shown when editing) */}
+                    {isEditing && (
+                      <div className="mt-3 p-3 border border-gray-100 rounded-lg bg-gray-50">
+                        <h4 className="text-sm font-bold text-gray-800 mb-2">Stock Refill</h4>
+                        <div className="text-sm text-gray-700 mb-2">Current Stock: <span className="font-bold">{currentStock ?? newProduct.stock}</span></div>
+                        <div className="flex gap-2">
+                          <input 
+                            type="number"
+                            min={1}
+                            value={refillQty}
+                            onChange={(e) => setRefillQty(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                            placeholder="Quantity to add"
+                          />
+                          <button onClick={handleRefillStock} className="px-3 py-2 rounded-lg bg-[oklch(0.58_0.235_29.234)] text-white font-medium">Refill Stock</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -315,6 +492,36 @@ export default function ProductsPage() {
                         ))}
                       </select>
                       <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition font-medium" onClick={() => setIsAddingCategory(true)}>+ New</button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Brand</label>
+                  {isAddingBrand ? (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={newProduct.brand}
+                        onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                        placeholder="New brand name"
+                      />
+                      <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition" onClick={() => setIsAddingBrand(false)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <select 
+                        value={newProduct.brand}
+                        onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                      >
+                        <option value="">Select a brand</option>
+                        {brandsList.map(b => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
+                        ))}
+                      </select>
+                      <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 transition font-medium" onClick={() => setIsAddingBrand(true)}>+ New</button>
                     </div>
                   )}
                 </div>
@@ -362,6 +569,21 @@ export default function ProductsPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Product Images (Max 4)</label>
+
+                  {/* Existing images with remove toggle when editing */}
+                  {existingImages.length > 0 && (
+                    <div className="mb-3 flex gap-2 overflow-x-auto">
+                      {existingImages.map((img, idx) => (
+                        <div key={idx} className="flex flex-col items-center text-center">
+                          <div className="w-20 h-20 rounded-xl border flex items-center justify-center bg-white text-2xl">{img}</div>
+                          <label className="text-xs mt-1 flex items-center gap-1">
+                            <input type="checkbox" checked={removeImages.includes(img)} onChange={() => toggleRemoveImage(img)} /> Remove
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <input 
                     type="file" 
                     multiple 

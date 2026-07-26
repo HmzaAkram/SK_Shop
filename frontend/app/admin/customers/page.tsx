@@ -1,42 +1,53 @@
-'use client'
+﻿'use client'
 
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Search, Eye } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-
-const customers: any[] = []
+import { fetchApi } from '@/lib/api'
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', cnic: '', address: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [witnesses, setWitnesses] = useState([{ name: '', phone: '', cnic: '', address: '' }])
-  const addWitness = () => setWitnesses([...witnesses, { name: '', phone: '', cnic: '', address: '' }])
-  const removeWitness = (index: number) => setWitnesses(witnesses.filter((_, i) => i !== index))
-  const updateWitness = (index: number, field: string, value: string) => {
-    const updated = [...witnesses]
-    updated[index] = { ...updated[index], [field]: value }
-    setWitnesses(updated)
-  }
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const q = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''
+        const res = await fetchApi(`/customers${q}`, { signal: controller.signal as any })
+        // backend returns { success, message, data: [...] }
+        const data = Array.isArray(res.data) ? res.data : res
+        if (!cancelled) setCustomers(data)
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Failed to load customers')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    // simple debounce
+    const t = setTimeout(load, 250)
+    return () => { cancelled = true; controller.abort(); clearTimeout(t) }
+  }, [searchQuery])
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Customers</h1>
           <p className="text-foreground/70 mt-1">Manage customer accounts and information</p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={() => setIsAddModalOpen(true)}>
+        <button className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition">
           <Plus className="w-4 h-4 mr-2" />
           Add Customer
         </button>
       </div>
 
-      {/* Search */}
       <Card className="p-4">
         <div className="flex gap-4">
           <div className="flex-1 relative">
@@ -53,7 +64,6 @@ export default function CustomersPage() {
         </div>
       </Card>
 
-      {/* Customers Table - Desktop */}
       <div className="hidden md:block">
         <Card className="overflow-hidden">
           <table className="w-full">
@@ -68,21 +78,21 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {loading && (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">Loading...</td></tr>
+              )}
+              {!loading && customers.length === 0 && (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">No customers found</td></tr>
+              )}
               {customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-muted/50 transition">
                   <td className="px-6 py-4 text-foreground font-medium">{customer.name}</td>
-                  <td className="px-6 py-4 text-foreground/70">{customer.email}</td>
+                  <td className="px-6 py-4 text-foreground/70">{customer.email || '-'}</td>
                   <td className="px-6 py-4 text-foreground/70">{customer.phone}</td>
-                  <td className="px-6 py-4 text-foreground font-semibold">{customer.totalPurchases}</td>
+                  <td className="px-6 py-4 text-foreground font-semibold">{customer.total_purchased ?? customer.totalPurchases ?? 0}</td>
                   <td className="px-6 py-4 text-center">
-                    <span
-                      className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        customer.status === 'Active'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400'
-                      }`}
-                    >
-                      {customer.status}
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'}`}>
+                      Active
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -105,7 +115,6 @@ export default function CustomersPage() {
         </Card>
       </div>
 
-      {/* Customers Cards - Mobile */}
       <div className="md:hidden space-y-4">
         {customers.map((customer) => (
           <Card key={customer.id} className="p-4">
@@ -115,18 +124,12 @@ export default function CustomersPage() {
                 <p className="text-sm text-foreground/70">{customer.email}</p>
                 <p className="text-sm text-foreground/70">{customer.phone}</p>
               </div>
-              <span
-                className={`text-xs font-semibold px-2 py-1 rounded ${
-                  customer.status === 'Active'
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400'
-                }`}
-              >
-                {customer.status}
+              <span className={`text-xs font-semibold px-2 py-1 rounded ${'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'}`}>
+                Active
               </span>
             </div>
             <div className="mb-3">
-              <span className="text-lg font-bold text-primary">{customer.totalPurchases}</span>
+              <span className="text-lg font-bold text-primary">{customer.total_purchased ?? customer.totalPurchases ?? 0}</span>
             </div>
             <div className="flex gap-2">
               <Link href={`/admin/customers/${customer.id}`} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 transition">
@@ -142,129 +145,7 @@ export default function CustomersPage() {
         ))}
       </div>
 
-      {/* Add Customer Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            {/* Sticky Header */}
-            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">Add New Customer</h2>
-            </div>
-
-            {/* Scrollable Body */}
-            <div className="px-6 py-4 overflow-y-auto flex-1">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="e.g. Ali Khan"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">CNIC</label>
-                  <input 
-                    type="text" 
-                    value={newCustomer.cnic}
-                    onChange={(e) => setNewCustomer({...newCustomer, cnic: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="12345-1234567-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="ali@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="03XX-XXXXXXX"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Address</label>
-                  <textarea 
-                    rows={2}
-                    value={newCustomer.address}
-                    onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                    placeholder="Full address..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-8 mb-4 border-t border-gray-100 pt-6">
-                <h3 className="font-bold text-gray-900 text-sm">Witnesses (Optional)</h3>
-                <button type="button" onClick={addWitness} className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
-                  <Plus className="w-3 h-3" /> Add Witness
-                </button>
-              </div>
-
-              <div className="space-y-4 pb-4">
-                {witnesses.map((w, index) => (
-                  <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-lg relative">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-bold text-gray-500 uppercase">Witness {index + 1}</span>
-                      {witnesses.length > 1 && (
-                        <button onClick={() => removeWitness(index)} className="text-red-400 hover:text-red-600 p-1 transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
-                        <input type="text" value={w.name} onChange={(e) => updateWitness(index, 'name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary outline-none" placeholder="Name" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
-                        <input type="text" value={w.phone} onChange={(e) => updateWitness(index, 'phone', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary outline-none" placeholder="Phone" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
-                        <input type="text" value={w.cnic} onChange={(e) => updateWitness(index, 'cnic', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary outline-none" placeholder="CNIC" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                        <input type="text" value={w.address} onChange={(e) => updateWitness(index, 'address', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary outline-none" placeholder="Address" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Sticky Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
-              <button className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition" onClick={() => {
-                alert('Dummy action: Customer added!');
-                setNewCustomer({ name: '', email: '', phone: '', cnic: '', address: '' });
-                setWitnesses([{ name: '', phone: '', cnic: '', address: '' }]);
-                setIsAddModalOpen(false);
-              }}>Save Customer</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {error && <div className="text-red-600">{error}</div>}
     </div>
   )
 }
-

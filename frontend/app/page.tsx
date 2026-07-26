@@ -18,8 +18,16 @@ export default function Home() {
           fetchApi('/products'),
           fetchApi('/categories')
         ])
-        if (prodRes.success) setFeaturedProducts(prodRes.data.data.slice(0, 4))
-        if (catRes.success) setCategories(catRes.data.slice(0, 6))
+        if (prodRes.success && Array.isArray(prodRes.data?.data)) {
+          setFeaturedProducts(prodRes.data.data.slice(0, 4))
+        } else {
+          setFeaturedProducts([])
+        }
+        if (catRes.success && Array.isArray(catRes.data)) {
+          setCategories(catRes.data.slice(0, 6))
+        } else {
+          setCategories([])
+        }
       } catch (err) {
         console.error(err)
       }

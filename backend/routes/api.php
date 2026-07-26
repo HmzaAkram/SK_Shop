@@ -24,6 +24,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/brands', [App\Http\Controllers\BrandController::class, 'index']);
 
 Route::post('/track-installment', [InstallmentTrackingController::class, 'track'])
     ->middleware('throttle:track-installment');
@@ -42,6 +43,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{category}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+    // Brands (write operations are admin-only; GET /brands is public above)
+    Route::post('/brands', [App\Http\Controllers\BrandController::class, 'store']);
 
     // Products (write operations are admin-only; GET routes are public above)
     Route::post('/products', [ProductController::class, 'store']);
