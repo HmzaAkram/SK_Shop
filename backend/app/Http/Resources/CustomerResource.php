@@ -12,9 +12,34 @@ class CustomerResource extends JsonResource
         // Helper to show 'Not Available' for empty values on frontend if desired
         $na = fn($v) => ($v === null || $v === '' || (is_array($v) && empty($v))) ? null : $v;
 
-        $outstanding = $this->when(isset($this->outstanding_balance), (float) $this->outstanding_balance, 0.0);
-        $totalPurchased = $this->when(isset($this->total_purchased), (float) $this->total_purchased, 0.0);
-        $totalPaid = $this->when(isset($this->total_paid), (float) $this->total_paid, 0.0);
+        // Compute outstanding, total purchased and total paid from available model attributes or relations
+        // Backend may supply sales_sum_total_amount when using withSum('sales', 'total_amount')
+        $outstanding = 0.0;
+        if (isset($this->outstanding_balance)) {
+            $outstanding = (float) $this->outstanding_balance;
+        }
+
+        // total purchased: prefer sales_sum_total_amount (from withSum), else sum loaded sales, else 0
+        $totalPurchased = 0.0;
+        if (isset($this->sales_sum_total_amount)) {
+            $totalPurchased = (float) $this->sales_sum_total_amount;
+        } elseif ($this->relationLoaded('sales')) {
+            $totalPurchased = (float) $this->sales->sum('total_amount');
+        } elseif (isset($this->total_purchased)) {
+            $totalPurchased = (float) $this->total_purchased;
+        }
+
+        // total paid: try explicit attribute, else sum paid installments across loaded sales
+        $totalPaid = 0.0;
+        if (isset($this->total_paid)) {
+            $totalPaid = (float) $this->total_paid;
+        } elseif ($this->relationLoaded('sales')) {
+            $totalPaid = (float) $this->sales->sum(function ($sale) {
+                $paid = (float) $sale->advance_payment;
+                $paid += (float) $sale->installments->where('status', 'Paid')->sum('amount');
+                return $paid;
+            });
+        }
 
         $status = 'Not Available';
         if (isset($this->outstanding_balance)) {

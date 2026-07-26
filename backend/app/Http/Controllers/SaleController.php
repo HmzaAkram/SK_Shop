@@ -101,4 +101,26 @@ class SaleController extends Controller
             ], 500);
         }
     }
+
+    public function destroy(Sale $sale): JsonResponse
+    {
+        try {
+            $this->saleService->deleteSale($sale);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sale deleted successfully',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to delete sale', [
+                'message' => $e->getMessage(),
+                'sale_id' => $sale->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete sale. Please try again.',
+            ], 500);
+        }
+    }
 }

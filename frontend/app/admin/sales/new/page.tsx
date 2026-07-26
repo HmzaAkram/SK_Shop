@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, Trash2, ChevronRight, User, ShoppingCart, CreditCard, CheckCircle2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchApi } from '@/lib/api'
 
 export default function NewSalePage() {
@@ -30,8 +30,24 @@ export default function NewSalePage() {
   const [downPayment, setDownPayment] = useState('')
   const [installmentMonths, setInstallmentMonths] = useState(12)
 
-  // Customer State
-  const [customer, setCustomer] = useState({ name: '', phone: '', cnic: '', address: '' })
+  // Customer Search & State
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [loadingResults, setLoadingResults] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [highlightIndex, setHighlightIndex] = useState<number>(-1)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null)
+
+  const debounceRef = useRef<number | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
+
+  // Add Customer Form State (used when creating a new customer)
+  const [customerForm, setCustomerForm] = useState({ name: '', phone: '', cnic: '', address: '' })
+  const [creatingCustomer, setCreatingCustomer] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   // Witnesses State
   const [witnesses, setWitnesses] = useState([{ name: '', phone: '', cnic: '', address: '' }])
@@ -67,6 +83,238 @@ export default function NewSalePage() {
     }
     setAddingProduct(null)
   }
+
+  // Search customers with debounce (300ms)
+  const doSearch = useCallback(async (term: string) => {
+    if (!term || term.trim().length === 0) {
+      setResults([])
+      setLoadingResults(false)
+      setSearchError(null)
+      setShowDropdown(false)
+      return
+    }
+
+    setLoadingResults(true)
+    setSearchError(null)
+
+    try {
+      const res = await fetchApi(`/customers?search=${encodeURIComponent(term)}&per_page=10`)
+      if (res && res.success) {
+        setResults(res.data ?? [])
+        setShowDropdown(true)
+      } else {
+        setResults([])
+        setShowDropdown(true)
+      }
+    } catch (err: any) {
+      console.error(err)
+      setSearchError(err?.message || 'Search failed')
+      setResults([])
+      setShowDropdown(true)
+    } finally {
+      setLoadingResults(false)
+      setHighlightIndex(-1)
+    }
+  }, [])
+
+  useEffect(() => {
+    // reset selected customer when manual changes to query
+    if (selectedCustomer && query !== (selectedCustomer?.name || '')) {
+      // do not automatically clear if input was programmatically set to selected customer's name
+    }
+  }, [query, selectedCustomer])
+
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    if (!query || query.trim().length === 0) {
+      setResults([])
+      setShowDropdown(false)
+      setLoadingResults(false)
+      return
+    }
+
+    // Debounce 300ms
+    debounceRef.current = window.setTimeout(() => {
+      doSearch(query.trim())
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    }
+  }, [query, doSearch])
+
+  // Keyboard navigation for dropdown
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightIndex(i => Math.min(i + 1, results.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (highlightIndex >= 0 && highlightIndex < results.length) {
+        selectCustomer(results[highlightIndex])
+      }
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false)
+    }
+  }
+
+  const selectCustomer = async (item: any) => {
+    setShowDropdown(false)
+    setLoadingResults(true)
+    try {
+      const res = await fetchApi(`/customers/${item.id}`)
+      if (res && res.success) {
+        setSelectedCustomer(res.data)
+        // populate quick form values so sale submit uses the selected customer's phone/name
+        setCustomerForm({
+          name: res.data.name || '',
+          phone: res.data.phone || '',
+          cnic: res.data.cnic || '',
+          address: res.data.address || ''
+        })
+        setShowCreateForm(false)
+      } else {
+        // no-op
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingResults(false)
+    }
+  }
+
+  const clearSelectedCustomer = () => {
+    setSelectedCustomer(null)
+    setCustomerForm({ name: '', phone: '', cnic: '', address: '' })
+    setShowCreateForm(false)
+    setQuery('')
+  }
+
+  // Create new customer from the add-customer form
+  const createCustomer = async () => {
+    setCreatingCustomer(true)
+    setCreateError(null)
+    try {
+      const res = await fetchApi('/customers', {
+        method: 'POST',
+        body: JSON.stringify(customerForm),
+      })
+
+      if (res && res.success) {
+        setSelectedCustomer(res.data)
+        setShowCreateForm(false)
+      } else {
+        setCreateError(res.message || 'Failed to create customer')
+      }
+    } catch (err: any) {
+      if (err && err.message && err.message.includes('exists')) {
+        // API returns 409 with existing customer in data when duplicate detected
+        // fetchApi throws for non-2xx, so need to parse error returned structure
+        try {
+          // Attempt to call /customers with fetch to get full response body for 409
+          const token = localStorage.getItem('admin_token')
+          const r = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/customers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+            },
+            body: JSON.stringify(customerForm),
+          })
+          const body = await r.json().catch(() => null)
+          if (r.status === 409 && body && body.data) {
+            // Show helpful UI: customer exists, provide button to select existing
+            setCreateError('This customer already exists.')
+            setSelectedCustomer(body.data)
+            setShowCreateForm(false)
+            return
+          }
+        } catch (innerErr) {
+          console.error(innerErr)
+        }
+
+        setCreateError(err?.message || 'Failed to create customer')
+      } else if (err && err.errors) {
+        setCreateError(Object.values(err.errors).flat().join(', '))
+      } else {
+        setCreateError(err?.message || 'Failed to create customer')
+      }
+    } finally {
+      setCreatingCustomer(false)
+    }
+  }
+
+  // When completing sale, make sure to send customer data matching selectedCustomer if present
+  const submitSale = async () => {
+    if (!customerForm.phone || !customerForm.phone.trim()) {
+      alert('Customer phone is required. Please select an existing customer or fill phone when creating a new one.')
+      return
+    }
+
+    try {
+      const payload: any = {
+        customer: {
+          name: customerForm.name,
+          phone: customerForm.phone,
+          cnic: customerForm.cnic,
+          address: customerForm.address,
+          guarantor_name: witnesses[0]?.name,
+          guarantor_phone: witnesses[0]?.phone,
+          guarantor_cnic: witnesses[0]?.cnic,
+        },
+        sale_date: new Date().toISOString().split('T')[0],
+        type: paymentMethod,
+        total_amount: subtotal,
+        advance_payment: paymentMethod === 'Installment' ? Number(downPayment || 0) : 0,
+        total_installments: paymentMethod === 'Installment' ? installmentMonths : null,
+        monthly_installment: paymentMethod === 'Installment' ? monthly : null,
+        items: cart.map(i => ({
+          product_id: i.product.id,
+          quantity: i.qty,
+          discount: i.details?.discount ?? 0,
+        }))
+      }
+
+      // If selectedCustomer exists, ensure payload.customer.phone matches it (so backend will reuse existing)
+      if (selectedCustomer) {
+        payload.customer.phone = selectedCustomer.phone
+        payload.customer.name = selectedCustomer.name
+        payload.customer.cnic = selectedCustomer.cnic
+        payload.customer.address = selectedCustomer.address
+      }
+
+      const res = await fetchApi('/sales', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+
+      if (res.success) {
+        setCreatedSale(res.data)
+        setShowInvoice(true)
+      } else {
+        alert(res.message || 'Failed to save sale')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Failed to save sale.')
+    }
+  }
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [])
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-6rem)]">
@@ -106,13 +354,48 @@ export default function NewSalePage() {
             <div className="p-6 flex flex-col h-full overflow-y-auto">
               <h2 className="text-lg font-bold text-gray-900 mb-6">Select Customer</h2>
 
-              <div className="relative mb-6">
+              <div className="relative mb-2">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
+                  ref={inputRef}
                   type="text"
+                  value={query}
+                  onChange={e => { setQuery(e.target.value); setShowCreateForm(false); setSelectedCustomer(null); setCustomerForm({ name: '', phone: '', cnic: '', address: '' }) }}
+                  onKeyDown={onSearchKeyDown}
                   placeholder="Search by name, phone, or CNIC..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] focus:outline-none"
                 />
+
+                {/* Dropdown */}
+                {showDropdown && (
+                  <div ref={dropdownRef} className="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-auto">
+                    {loadingResults && <div className="p-3 text-sm text-gray-500">Searching...</div>}
+                    {!loadingResults && searchError && <div className="p-3 text-sm text-red-600">{searchError}</div>}
+                    {!loadingResults && !searchError && results.length === 0 && (
+                      <div className="p-3">
+                        <div className="text-sm text-gray-600">No customer found.</div>
+                        <button onClick={() => { setShowCreateForm(true); setShowDropdown(false); setCustomerForm({ name: query, phone: '', cnic: '', address: '' }) }} className="mt-2 text-sm text-blue-600">+ Create New Customer</button>
+                      </div>
+                    )}
+
+                    {!loadingResults && !searchError && results.map((r, idx) => (
+                      <div
+                        key={r.id}
+                        onClick={() => selectCustomer(r)}
+                        className={`p-3 cursor-pointer hover:bg-gray-50 ${highlightIndex === idx ? 'bg-gray-50' : ''}`}
+                      >
+                        <div className="font-bold">{r.name}</div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          <span>📞 {r.phone}</span>
+                          <span className="mx-2">•</span>
+                          <span>CNIC: {r.cnic || 'N/A'}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Customer ID: {r.customer_id} • {r.status_label}</div>
+                        {r.address_short && <div className="text-xs text-gray-500 mt-1">{r.address_short}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-4 mb-6">
@@ -121,26 +404,69 @@ export default function NewSalePage() {
                 <div className="flex-1 border-b border-gray-200"></div>
               </div>
 
-              <h3 className="font-bold text-gray-900 text-sm mb-4">Add New Customer</h3>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                  <input type="text" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number *</label>
-                  <input type="text" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
-                  <input type="text" value={customer.cnic} onChange={e => setCustomer({...customer, cnic: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="XXXXX-XXXXXXX-X" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                  <textarea value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
-                </div>
-              </div>
+              {/* Show Selected Customer Card */}
+              {selectedCustomer ? (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-gray-900 text-lg">{selectedCustomer.name}</div>
+                      <div className="text-sm text-gray-600">📞 {selectedCustomer.phone} • CNIC: {selectedCustomer.cnic || 'N/A'}</div>
+                      <div className="text-sm text-gray-600 mt-1">{selectedCustomer.address}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Outstanding</div>
+                      <div className="font-bold text-gray-900">{formatPKR(selectedCustomer.outstanding_balance || 0)}</div>
+                      <div className="text-sm text-gray-500 mt-2">Status: <span className="font-bold">{selectedCustomer.status}</span></div>
+                    </div>
+                  </div>
 
+                  <div className="mt-4 flex justify-end">
+                    <Button variant="outline" size="sm" onClick={clearSelectedCustomer}>Change Customer</Button>
+                  </div>
+                </div>
+              ) : (
+                // Show a compact 'Create New Customer' CTA when form is hidden
+                !showCreateForm && (
+                  <div className="mb-4">
+                    <Button variant="outline" size="sm" onClick={() => { setShowCreateForm(true); setCustomerForm({ name: query, phone: '', cnic: '', address: '' }) }} className="h-9 text-sm">+ Add New Customer</Button>
+                  </div>
+                )
+              )}
+
+              {/* Add New Customer Form (hidden by default) */}
+              {showCreateForm && !selectedCustomer && (
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm mb-4">Add New Customer</h3>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                      <input type="text" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="e.g. Tariq Mehmood" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number *</label>
+                      <input type="text" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="03XX-XXXXXXX" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
+                      <input type="text" value={customerForm.cnic} onChange={e => setCustomerForm({ ...customerForm, cnic: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" placeholder="XXXXX-XXXXXXX-X" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
+                      <textarea value={customerForm.address} onChange={e => setCustomerForm({ ...customerForm, address: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-900 bg-white" rows={2} placeholder="Complete home address"></textarea>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-sm text-red-600">{createError}</div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+                      <Button onClick={createCustomer} disabled={creatingCustomer} className="bg-[oklch(0.58_0.235_29.234)] text-white">{creatingCustomer ? 'Creating...' : 'Create Customer'}</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Witnesses */}
               <div className="flex items-center justify-between mb-4 border-t border-gray-200 pt-6">
                 <h3 className="font-bold text-gray-900 text-sm">Witnesses (Optional for Installments)</h3>
                 <Button variant="outline" size="sm" onClick={addWitness} className="h-8 text-xs bg-white hover:bg-gray-50 border-gray-200">
@@ -214,8 +540,7 @@ export default function NewSalePage() {
                         size="sm"
                         onClick={() => openProductModal(product)}
                         disabled={product.stock === 0}
-                        className={`h-7 px-2 text-xs ${product.stock > 0 ? 'bg-[oklch(0.35_0.165_260)] hover:bg-[oklch(0.25_0.165_260)] text-white' : 'bg-gray-200 text-gray-400'}`}
-                      >
+                        className={`h-7 px-2 text-xs ${product.stock > 0 ? 'bg-[oklch(0.35_0.165_260)] hover:bg-[oklch(0.25_0.165_260)] text-white' : 'bg-gray-200 text-gray-400'}`}>
                         Add
                       </Button>
                     </div>
@@ -382,49 +707,7 @@ export default function NewSalePage() {
                 Next Step <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={async () => {
-                if (!customer.phone || !customer.phone.trim()) {
-                  alert('Customer phone is required.');
-                  return;
-                }
-                try {
-                  const res = await fetchApi('/sales', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      customer: {
-                        name: customer.name,
-                        phone: customer.phone,
-                        cnic: customer.cnic,
-                        address: customer.address,
-                        guarantor_name: witnesses[0]?.name,
-                        guarantor_phone: witnesses[0]?.phone,
-                        guarantor_cnic: witnesses[0]?.cnic,
-                      },
-                      sale_date: new Date().toISOString().split('T')[0],
-                      type: paymentMethod,
-                      total_amount: subtotal,
-                      advance_payment: paymentMethod === 'Installment' ? Number(downPayment || 0) : 0,
-                      total_installments: paymentMethod === 'Installment' ? installmentMonths : null,
-                      monthly_installment: paymentMethod === 'Installment' ? monthly : null,
-                      items: cart.map(i => ({
-                        product_id: i.product.id,
-                        quantity: i.qty,
-                        unit_price: i.details?.unitPrice ?? i.product.selling_price,
-                        subtotal: ((i.details?.unitPrice ?? i.product.selling_price) * i.qty) - (i.details?.discount ?? 0) * i.qty
-                      }))
-                    })
-                  })
-                  if (res.success) {
-                    setCreatedSale(res.data)
-                    setShowInvoice(true)
-                  } else {
-                    alert(res.message || 'Failed to save sale')
-                  }
-                } catch (err) {
-                  console.error(err)
-                  alert('Failed to save sale.')
-                }
-              }} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
+              <Button onClick={submitSale} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
                 Complete Sale
               </Button>
             )}
@@ -518,7 +801,7 @@ export default function NewSalePage() {
               <h2 className="text-xl font-bold text-gray-900">Generated Invoice</h2>
               <button className="text-gray-400 hover:text-gray-600" onClick={() => setShowInvoice(false)}>Close</button>
             </div>
-            
+
             {/* Printable Area */}
             <div className="p-8 overflow-y-auto flex-1 bg-white" id="invoice-print-area">
               <div className="text-center mb-6">
@@ -529,8 +812,8 @@ export default function NewSalePage() {
               <div className="flex justify-between mb-8 text-sm">
                 <div>
                   <p className="text-gray-500">Bill To:</p>
-                  <p className="font-bold text-gray-900">{customer.name || 'N/A'}</p>
-                  <p className="text-gray-600">{customer.phone || 'N/A'}</p>
+                  <p className="font-bold text-gray-900">{customerForm.name || 'N/A'}</p>
+                  <p className="text-gray-600">{customerForm.phone || 'N/A'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-gray-500">Date:</p>
@@ -568,7 +851,7 @@ export default function NewSalePage() {
                   <span className="font-bold text-gray-700">Subtotal</span>
                   <span className="font-bold text-gray-900">{formatPKR(subtotal)}</span>
                 </div>
-                
+
                 {paymentMethod === 'Installment' && (
                   <>
                     <div className="flex justify-between">
@@ -581,7 +864,7 @@ export default function NewSalePage() {
                     </div>
                   </>
                 )}
-                
+
                 {paymentMethod !== 'Installment' && (
                   <div className="flex justify-between text-green-600 border-t border-gray-200 pt-2">
                     <span className="font-bold">Total Paid</span>

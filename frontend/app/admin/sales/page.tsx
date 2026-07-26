@@ -6,6 +6,7 @@ import { Plus, Eye, Trash2, Search, Download } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { fetchApi } from '@/lib/api'
+import { TransactionDetailsModal } from '@/app/admin/reports/components/TransactionDetailsModal'
 
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([])
@@ -45,6 +46,44 @@ export default function SalesPage() {
         return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
       default:
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+    }
+  }
+
+  // View modal state and selected sale
+  const [selectedSale, setSelectedSale] = useState<any | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const mapSaleToTransaction = (sale: any) => {
+    if (!sale) return null
+    return {
+      id: sale.id,
+      entity: sale.customer?.name ?? sale.customer,
+      date: sale.sale_date,
+      totalBill: sale.total_amount,
+      product: sale.items && sale.items.length > 0 ? sale.items.map((it: any) => `${it.product?.name ?? it.product_id} x${it.quantity}`).join(', ') : undefined,
+      history: sale.installments ? sale.installments.map((ins: any) => ({ date: ins.due_date, method: ins.status, amount: ins.amount })) : undefined,
+      remaining: sale.total_amount - (sale.advance_payment ?? 0),
+    }
+  }
+
+  const handleView = async (saleId: number | string) => {
+    try {
+      const res = await fetchApi(`/sales/${saleId}`)
+      const sale = res?.data || res
+      setSelectedSale(mapSaleToTransaction(sale))
+      setIsModalOpen(true)
+    } catch (err: any) {
+      alert(err?.message || 'Failed to load sale details')
+    }
+  }
+
+  const handleDelete = async (saleId: number | string) => {
+    if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return
+    try {
+      await fetchApi(`/sales/${saleId}`, { method: 'DELETE' })
+      setSales((prev) => prev.filter((s) => s.id !== saleId))
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete sale')
     }
   }
 
@@ -120,10 +159,10 @@ export default function SalesPage() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex gap-2 justify-center">
-                      <button className="p-2 hover:bg-muted rounded-lg transition">
+                      <button onClick={() => handleView(sale.id)} className="p-2 hover:bg-muted rounded-lg transition" title="View">
                         <Eye className="w-4 h-4 text-blue-600" />
                       </button>
-                      <button className="p-2 hover:bg-muted rounded-lg transition">
+                      <button onClick={() => handleDelete(sale.id)} className="p-2 hover:bg-muted rounded-lg transition" title="Delete">
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
@@ -153,17 +192,21 @@ export default function SalesPage() {
               <span className="text-sm text-foreground/70">{(sale.items || []).length} items</span>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => handleView(sale.id)}>
                 <Eye className="w-4 h-4 mr-1" />
                 View
               </Button>
-              <Button size="sm" variant="outline" className="text-red-600">
+              <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleDelete(sale.id)}>
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </Card>
         ))}
       </div>
+
+      {isModalOpen && selectedSale && (
+        <TransactionDetailsModal transaction={selectedSale} onClose={() => { setIsModalOpen(false); setSelectedSale(null); }} />
+      )}
 
       {error && <div className="text-red-600">{error}</div>}
     </div>

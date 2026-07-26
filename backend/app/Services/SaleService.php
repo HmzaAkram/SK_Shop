@@ -9,6 +9,8 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class SaleService
@@ -22,10 +24,26 @@ class SaleService
     public function createSale(array $data): Sale
     {
         return DB::transaction(function () use ($data) {
-            $customer = Customer::firstOrCreate(
-                ['phone' => $data['customer']['phone']],
-                $data['customer']
-            );
+            // Try to reuse existing customer by phone OR CNIC to avoid duplicates.
+            // Prefer phone match, fall back to CNIC. If none found, create a new customer.
+            $customerData = $data['customer'] ?? [];
+            $customer = null;
+
+            if (!empty($customerData['phone']) || !empty($customerData['cnic'])) {
+                $customerQuery = Customer::query();
+                if (!empty($customerData['phone'])) {
+                    $customerQuery->where('phone', $customerData['phone']);
+                }
+                if (!empty($customerData['cnic'])) {
+                    $customerQuery->orWhere('cnic', $customerData['cnic']);
+                }
+                $customer = $customerQuery->first();
+            }
+
+            if (!$customer) {
+                // create new customer record
+                $customer = Customer::create($customerData);
+            }
 
             // Lock the row that holds the highest invoice number to avoid a race
             // condition between two concurrent sales generating the same number.
@@ -111,6 +129,33 @@ class SaleService
             }
 
             return $sale->load(['customer', 'items.product', 'installments']);
+        });
+    }
+
+    /**
+     * Delete a sale: restore product stock, remove related items & installments, then delete the sale.
+     * Performed inside a database transaction to ensure consistency.
+     */
+    public function deleteSale(Sale $sale): void
+    {
+        DB::transaction(function () use ($sale) {
+            // Reload relationships to ensure we have items and their product ids
+            $sale->load(['items']);
+
+            foreach ($sale->items as $item) {
+                // Lock product row before updating stock
+                $product = Product::lockForUpdate()->find($item->product_id);
+                if ($product) {
+                    $product->increment('stock', $item->quantity);
+                }
+            }
+
+            // Delete installments and sale items
+            $sale->installments()->delete();
+            $sale->items()->delete();
+
+            // Finally delete the sale record
+            $sale->delete();
         });
     }
 }

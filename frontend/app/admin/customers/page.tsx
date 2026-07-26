@@ -70,8 +70,7 @@ export default function CustomersPage() {
             <thead className="bg-card border-b border-border">
               <tr>
                 <th className="text-left px-6 py-4 font-semibold text-foreground">Name</th>
-                <th className="text-left px-6 py-4 font-semibold text-foreground">Email</th>
-                <th className="text-left px-6 py-4 font-semibold text-foreground">Phone</th>
+                  <th className="text-left px-6 py-4 font-semibold text-foreground">Phone</th>
                 <th className="text-left px-6 py-4 font-semibold text-foreground">Total Purchases</th>
                 <th className="text-center px-6 py-4 font-semibold text-foreground">Status</th>
                 <th className="text-center px-6 py-4 font-semibold text-foreground">Actions</th>
@@ -79,17 +78,16 @@ export default function CustomersPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">Loading...</td></tr>
               )}
               {!loading && customers.length === 0 && (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">No customers found</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">No customers found</td></tr>
               )}
               {customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-muted/50 transition">
                   <td className="px-6 py-4 text-foreground font-medium">{customer.name}</td>
-                  <td className="px-6 py-4 text-foreground/70">{customer.email || '-'}</td>
                   <td className="px-6 py-4 text-foreground/70">{customer.phone}</td>
-                  <td className="px-6 py-4 text-foreground font-semibold">{customer.total_purchased ?? customer.totalPurchases ?? 0}</td>
+                  <td className="px-6 py-4 text-foreground font-semibold">{customer.total_purchases ?? customer.total_purchased ?? customer.sales_sum_total_amount ?? customer.totalPurchases ?? 0}</td>
                   <td className="px-6 py-4 text-center">
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'}`}>
                       Active
@@ -119,17 +117,16 @@ export default function CustomersPage() {
         {customers.map((customer) => (
           <Card key={customer.id} className="p-4">
             <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-bold text-foreground">{customer.name}</h3>
-                <p className="text-sm text-foreground/70">{customer.email}</p>
-                <p className="text-sm text-foreground/70">{customer.phone}</p>
-              </div>
-              <span className={`text-xs font-semibold px-2 py-1 rounded ${'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'}`}>
-                Active
-              </span>
+            <div>
+              <h3 className="font-bold text-foreground">{customer.name}</h3>
+              <p className="text-sm text-foreground/70">{customer.phone}</p>
+            </div>
+            <span className={`text-xs font-semibold px-2 py-1 rounded ${'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'}`}>
+              Active
+            </span>
             </div>
             <div className="mb-3">
-              <span className="text-lg font-bold text-primary">{customer.total_purchased ?? customer.totalPurchases ?? 0}</span>
+            <span className="text-lg font-bold text-primary">{customer.total_purchases ?? customer.total_purchased ?? customer.sales_sum_total_amount ?? customer.totalPurchases ?? 0}</span>
             </div>
             <div className="flex gap-2">
               <Link href={`/admin/customers/${customer.id}`} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 transition">
