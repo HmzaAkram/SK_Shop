@@ -13,6 +13,14 @@ const [searchQuery, setSearchQuery] = useState('')
 const [activeFilter, setActiveFilter] = useState('All')
 const [loading, setLoading] = useState(true)
 const [error, setError] = useState<string | null>(null)
+const [selectedInstallment, setSelectedInstallment] = useState<any | null>(null)
+const [paidDate, setPaidDate] = useState('')
+const [paymentMethod, setPaymentMethod] = useState('Cash')
+const [notes, setNotes] = useState('')
+const [submitting, setSubmitting] = useState(false)
+const [formError, setFormError] = useState<string | null>(null)
+
+const today = new Date().toISOString().split('T')[0]
 
 useEffect(() => {
 let cancelled = false
@@ -28,17 +36,21 @@ if (!cancelled) {
 const mapped = data.map((it: any) => {
 const sale = it.sale || {}
 const customer = sale.customer?.name || sale.customer || 'Unknown'
-const product = (sale.items && sale.items[0] && sale.items[0].product && sale.items[0].product.name) || (sale.product) || 'Product'
-const total = sale.total_amount ?? 0
-const dueAmount = parseFloat(it.amount ?? 0)
-const remaining = Math.max(0, (total || 0) - dueAmount)
-const paid = (total || 0) - remaining
+const customerId = sale.customer?.id || sale.customer_id || null
+const product = (sale.items && sale.items[0] && sale.items[0].product && sale.items[0].product.name) || sale.product || 'Product'
+const total = Number(sale.total_amount ?? 0)
+const dueAmount = Number(it.amount ?? 0)
+const remaining = Math.max(0, total - dueAmount)
+const paid = total - remaining
+const dueDate = it.due_date || ''
+const status = it.paid_date ? 'Completed' : dueDate === today ? 'Due Today' : (dueDate && new Date(dueDate) < new Date(today) ? 'Overdue' : 'Good')
 return {
 id: it.id,
 customer,
+customerId,
 product,
-status: it.status || (it.paid_date ? 'Completed' : 'Pending'),
-nextDue: it.due_date,
+status,
+nextDue: dueDate,
 dueAmount,
 remaining,
 paid,
@@ -78,6 +90,53 @@ default: return 'bg-gray-100 text-gray-700 border-gray-200'
 }
 }
 
+const handleRecordPayment = async () => {
+if (!selectedInstallment) return
+if (!paidDate) {
+  setFormError('Please choose a payment date.')
+  return
+}
+
+setSubmitting(true)
+setFormError(null)
+try {
+  const result = await fetchApi(`/installments/${selectedInstallment.id}/pay`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      paid_date: paidDate,
+      payment_method: paymentMethod,
+      notes: notes.trim() || null,
+    }),
+  })
+
+  const updated = result.data || result
+  const sale = updated.sale || {}
+  const total = Number(sale.total_amount ?? 0)
+  const dueAmount = Number(updated.amount ?? 0)
+  const remaining = Math.max(0, total - dueAmount)
+  const paid = total - remaining
+  const dueDate = updated.due_date || ''
+  const status = updated.paid_date ? 'Completed' : dueDate === today ? 'Due Today' : (dueDate && new Date(dueDate) < new Date(today) ? 'Overdue' : 'Good')
+
+  setInstallments(current => current.map(inst => inst.id === updated.id ? {
+    ...inst,
+    status,
+    nextDue: dueDate,
+    dueAmount,
+    remaining,
+    paid,
+    total,
+    raw: updated,
+  } : inst))
+
+  setSelectedInstallment(null)
+} catch (err: any) {
+  setFormError(err?.message || 'Failed to record payment')
+} finally {
+  setSubmitting(false)
+}
+}
+
 return (
 <div className="max-w-7xl mx-auto space-y-6">
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -89,7 +148,7 @@ return (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
     <Card className="p-4 bg-white border-gray-200 shadow-sm flex flex-col justify-between">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Receivables</p>
-      <p className="text-2xl font-black text-gray-900">{formatPKR(installments.reduce((s, i) => s + (i.total || 0), 0))}</p>
+      <p className="text-2xl font-black text-gray-900">{formatPKR(installments.reduce((s, i) => s + (Number(i.remaining) || 0), 0))}</p>
     </Card>
     <Card className="p-4 bg-white border-gray-200 shadow-sm flex flex-col justify-between">
       <div className="flex items-center gap-2 mb-2">
@@ -161,7 +220,7 @@ return (
                 <div className="flex items-center gap-3">
                   <div className={`w-1 h-10 rounded-full ${plan.status === 'Overdue' ? 'bg-red-500' : plan.status === 'Due Today' ? 'bg-amber-500' : plan.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500'}`} />
                   <div>
-                    <Link href={`/admin/customers/1`} className="font-bold text-gray-900 hover:text-[oklch(0.58_0.235_29.234)] block leading-tight mb-1">{plan.customer}</Link>
+                    <Link href={`/admin/customers/${plan.customerId ?? 1}`} className="font-bold text-gray-900 hover:text-[oklch(0.58_0.235_29.234)] block leading-tight mb-1">{plan.customer}</Link>
                     <p className="text-xs text-gray-500">{plan.id} • {plan.product}</p>
                   </div>
                 </div>
@@ -199,7 +258,11 @@ return (
                       size="sm" 
                       className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] h-8 text-xs px-3"
                       onClick={() => {
-                        alert('Record payment - dummy');
+                        setSelectedInstallment(plan)
+                        setPaidDate(plan.nextDue || today)
+                        setPaymentMethod('Cash')
+                        setNotes('')
+                        setFormError(null)
                       }}
                     >
                       Record Pay
@@ -217,6 +280,89 @@ return (
 
       {error && <div className="p-4 text-red-600">{error}</div>}
     </div>
+
+    {selectedInstallment && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedInstallment(null)}>
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Record Payment</h2>
+              <p className="text-sm text-gray-500">Installment ID: {selectedInstallment.id}</p>
+            </div>
+            <button onClick={() => setSelectedInstallment(null)} className="text-gray-500 hover:text-gray-700">Close</button>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Customer</p>
+                <p className="font-bold text-gray-900">{selectedInstallment.customer}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Amount due</p>
+                <p className="font-bold text-gray-900">{formatPKR(selectedInstallment.dueAmount)}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Payment Date</label>
+              <input
+                type="date"
+                value={paidDate}
+                onChange={(e) => setPaidDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none"
+              >
+                <option>Cash</option>
+                <option>Bank Transfer</option>
+                <option>Cheque</option>
+                <option>JazzCash</option>
+                <option>EasyPaisa</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Notes (Optional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none"
+              />
+            </div>
+
+            {formError && <div className="text-red-600 text-sm">{formError}</div>}
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedInstallment(null)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRecordPayment}
+              disabled={submitting}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Saving...' : 'Save Payment'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 </div>
 )

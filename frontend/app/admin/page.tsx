@@ -23,7 +23,8 @@ export default function AdminDashboard() {
           fetchApi('/reports/summary'),
         ])
         if (statsRes.success !== false) setStats(statsRes)
-        if (Array.isArray(salesRes)) setSales(salesRes.slice(0, 5))
+        const salesData = Array.isArray(salesRes) ? salesRes : (salesRes?.data ?? [])
+        setSales((salesData as any[]).slice(0, 5))
         if (reportRes.success !== false) setReportData(reportRes)
       } catch (err) {
         console.error(err)
