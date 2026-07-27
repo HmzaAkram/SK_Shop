@@ -4,9 +4,11 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, Trash2, ChevronRight, User, ShoppingCart, CreditCard, CheckCircle2 } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { fetchApi } from '@/lib/api'
 
 export default function NewSalePage() {
+  const router = useRouter()
   const [step, setStep] = useState(1)
   const [catalog, setCatalog] = useState<any[]>([])
 
@@ -23,6 +25,7 @@ export default function NewSalePage() {
   const [addingProduct, setAddingProduct] = useState<typeof catalog[0] | null>(null)
   const [productDetails, setProductDetails] = useState({ serialNo: '', discount: 0, unitPrice: 0 })
   const [showInvoice, setShowInvoice] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [createdSale, setCreatedSale] = useState<any>(null)
 
   // Payment State
@@ -49,9 +52,16 @@ export default function NewSalePage() {
   const [creatingCustomer, setCreatingCustomer] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
+  // Sale submission error
+  const [saleError, setSaleError] = useState<string | null>(null)
+  const [submittingSale, setSubmittingSale] = useState(false)
+
   // Witnesses State
-  const [witnesses, setWitnesses] = useState([{ name: '', phone: '', cnic: '', address: '' }])
-  const addWitness = () => setWitnesses([...witnesses, { name: '', phone: '', cnic: '', address: '' }])
+  const [witnesses, setWitnesses] = useState([])
+  const addWitness = () => {
+    if (witnesses.length >= 2) return;
+    setWitnesses([...witnesses, { name: '', phone: '', cnic: '', address: '' }]);
+  }
   const removeWitness = (index: number) => setWitnesses(witnesses.filter((_, i) => i !== index))
   const updateWitness = (index: number, field: string, value: string) => {
     const updated = [...witnesses]
@@ -66,6 +76,17 @@ export default function NewSalePage() {
   const subtotal = cart.reduce((sum, item) => sum + ((item.details?.unitPrice ?? item.product.selling_price) * item.qty - (item.details?.discount ?? 0) * item.qty), 0)
   const remaining = paymentMethod === 'Installment' ? subtotal - Number(downPayment || 0) : 0
   const monthly = paymentMethod === 'Installment' ? remaining / installmentMonths : 0
+
+  const resetSale = () => {
+    setStep(1)
+    setCart([])
+    setCreatedSale(null)
+    setShowInvoice(false)
+    setShowSuccess(false)
+    setSelectedCustomer(null)
+    setCustomerForm({ name: '', phone: '', cnic: '', address: '' })
+    setQuery('')
+  }
 
   const openProductModal = (product: typeof catalog[0]) => {
     if (product.stock === 0) return
@@ -201,7 +222,15 @@ export default function NewSalePage() {
     try {
       const res = await fetchApi('/customers', {
         method: 'POST',
-        body: JSON.stringify(customerForm),
+        body: JSON.stringify({
+          ...customerForm,
+          witnesses: witnesses.map(w => ({
+            full_name: w.name,
+            phone: w.phone,
+            cnic: w.cnic,
+            address: w.address,
+          })),
+        }),
       })
 
       if (res && res.success) {
@@ -252,9 +281,12 @@ export default function NewSalePage() {
   // When completing sale, make sure to send customer data matching selectedCustomer if present
   const submitSale = async () => {
     if (!customerForm.phone || !customerForm.phone.trim()) {
-      alert('Customer phone is required. Please select an existing customer or fill phone when creating a new one.')
+      setSaleError('Customer phone is required. Please select an existing customer or fill the phone field.')
       return
     }
+
+    setSaleError(null)
+    setSubmittingSale(true)
 
     try {
       const payload: any = {
@@ -263,9 +295,17 @@ export default function NewSalePage() {
           phone: customerForm.phone,
           cnic: customerForm.cnic,
           address: customerForm.address,
+          // Preserve legacy guarantor fields for backward compatibility (first witness)
           guarantor_name: witnesses[0]?.name,
           guarantor_phone: witnesses[0]?.phone,
           guarantor_cnic: witnesses[0]?.cnic,
+          // New witnesses array (max 2)
+          witnesses: witnesses.map(w => ({
+            full_name: w.name,
+            phone: w.phone,
+            cnic: w.cnic,
+            address: w.address,
+          })),
         },
         sale_date: new Date().toISOString().split('T')[0],
         type: paymentMethod,
@@ -295,13 +335,24 @@ export default function NewSalePage() {
 
       if (res.success) {
         setCreatedSale(res.data)
-        setShowInvoice(true)
+        setShowSuccess(true)
       } else {
-        alert(res.message || 'Failed to save sale')
+        // res.success false on 2xx with success:false body
+        setSaleError(res.message || 'Failed to save sale.')
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      alert('Failed to save sale.')
+      // fetchApi throws the parsed JSON body for non-2xx responses
+      // Extract the most meaningful message to show the admin
+      let msg = 'Failed to save sale.'
+      if (err?.errors?.items && Array.isArray(err.errors.items) && err.errors.items.length > 0) {
+        msg = err.errors.items.join('\n')
+      } else if (err?.message) {
+        msg = err.message
+      }
+      setSaleError(msg)
+    } finally {
+      setSubmittingSale(false)
     }
   }
 
@@ -456,7 +507,55 @@ export default function NewSalePage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mb-4">
+                  {/* Witnesses */}
+                  <div className="flex items-center justify-between mb-4 border-t border-gray-200 pt-6">
+                    <h3 className="font-bold text-gray-900 text-sm">Witnesses (Optional for Installments)</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={addWitness}
+                      disabled={witnesses.length >= 2}
+                      className="h-8 text-xs bg-white hover:bg-gray-50 border-gray-200"
+                    >
+                      <Plus className="w-3 h-3 mr-1" /> Add Witness
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4 mb-auto pb-4">
+                    {witnesses.map((w, index) => (
+                      <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-lg relative">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-bold text-[oklch(0.58_0.235_29.234)] uppercase">Witness {index + 1}</span>
+                          {witnesses.length > 1 && (
+                            <button onClick={() => removeWitness(index)} className="text-gray-400 hover:text-red-600 p-1 transition">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                            <input type="text" value={w.name} onChange={(e) => updateWitness(index, 'name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Name" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
+                            <input type="text" value={w.phone} onChange={(e) => updateWitness(index, 'phone', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Phone" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
+                            <input type="text" value={w.cnic} onChange={(e) => updateWitness(index, 'cnic', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="CNIC" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
+                            <input type="text" value={w.address} onChange={(e) => updateWitness(index, 'address', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Complete address" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Cancel / Create Customer — always at the END of the form */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-2">
                     <div className="text-sm text-red-600">{createError}</div>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
@@ -465,47 +564,6 @@ export default function NewSalePage() {
                   </div>
                 </div>
               )}
-
-              {/* Witnesses */}
-              <div className="flex items-center justify-between mb-4 border-t border-gray-200 pt-6">
-                <h3 className="font-bold text-gray-900 text-sm">Witnesses (Optional for Installments)</h3>
-                <Button variant="outline" size="sm" onClick={addWitness} className="h-8 text-xs bg-white hover:bg-gray-50 border-gray-200">
-                  <Plus className="w-3 h-3 mr-1" /> Add Witness
-                </Button>
-              </div>
-
-              <div className="space-y-4 mb-auto pb-4">
-                {witnesses.map((w, index) => (
-                  <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-lg relative">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-bold text-[oklch(0.58_0.235_29.234)] uppercase">Witness {index + 1}</span>
-                      {witnesses.length > 1 && (
-                        <button onClick={() => removeWitness(index)} className="text-gray-400 hover:text-red-600 p-1 transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
-                        <input type="text" value={w.name} onChange={(e) => updateWitness(index, 'name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Name" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
-                        <input type="text" value={w.phone} onChange={(e) => updateWitness(index, 'phone', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Phone" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-700 mb-1">CNIC</label>
-                        <input type="text" value={w.cnic} onChange={(e) => updateWitness(index, 'cnic', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="CNIC" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                        <input type="text" value={w.address} onChange={(e) => updateWitness(index, 'address', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] outline-none" placeholder="Complete address" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -599,7 +657,25 @@ export default function NewSalePage() {
           {/* STEP 3: PAYMENT */}
           {step === 3 && (
             <div className="p-6 flex flex-col h-full overflow-y-auto">
-              <h2 className="text-lg font-bold text-gray-900 mb-6">Payment Configuration</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Payment Configuration</h2>
+
+              {/* Inline sale error banner */}
+              {saleError && (
+                <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-red-700">Could not complete sale</p>
+                    {saleError.split('\n').map((line, i) => (
+                      <p key={i} className="text-sm text-red-600 mt-0.5">{line}</p>
+                    ))}
+                  </div>
+                  <button onClick={() => setSaleError(null)} className="text-red-400 hover:text-red-600 transition">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              )}
 
               <div className="mb-8">
                 <label className="block text-sm font-bold text-gray-700 mb-3">Payment Method</label>
@@ -707,8 +783,12 @@ export default function NewSalePage() {
                 Next Step <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={submitSale} className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8">
-                Complete Sale
+              <Button
+                onClick={submitSale}
+                disabled={submittingSale}
+                className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] px-8 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submittingSale ? 'Processing...' : 'Complete Sale'}
               </Button>
             )}
           </div>
@@ -879,6 +959,113 @@ export default function NewSalePage() {
               <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]" onClick={() => window.print()}>
                 Print Bill
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== PAYMENT SUCCESS MODAL ===================== */}
+      {showSuccess && createdSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
+
+            {/* Green header strip */}
+            <div className="bg-gradient-to-r from-emerald-500 to-green-400 p-6 text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-tight">Payment Successful</h2>
+              <p className="text-emerald-100 text-sm mt-1">Invoice #{createdSale?.invoice_number || createdSale?.id || '----'}</p>
+            </div>
+
+            {/* Summary body */}
+            <div className="p-6 space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-gray-500 text-xs font-semibold uppercase mb-1">Customer</p>
+                  <p className="font-bold text-gray-900 truncate">{createdSale?.customer?.name || customerForm.name || '—'}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-gray-500 text-xs font-semibold uppercase mb-1">Payment Type</p>
+                  <p className="font-bold text-gray-900">{createdSale?.type || paymentMethod}</p>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3">
+                  <p className="text-emerald-700 text-xs font-semibold uppercase mb-1">Paid Today</p>
+                  <p className="font-black text-emerald-700 text-lg">
+                    {formatPKR(
+                      (createdSale?.type || paymentMethod) === 'Installment'
+                        ? Number(createdSale?.advance_payment ?? downPayment ?? 0)
+                        : Number(createdSale?.total_amount ?? subtotal ?? 0)
+                    )}
+                  </p>
+                </div>
+                {(createdSale?.type || paymentMethod) === 'Installment' && (
+                  <div className="bg-orange-50 rounded-xl p-3">
+                    <p className="text-orange-700 text-xs font-semibold uppercase mb-1">Remaining Balance</p>
+                    <p className="font-black text-orange-700 text-lg">
+                      {formatPKR(Number(createdSale?.remaining_balance ?? remaining ?? 0))}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {(createdSale?.type || paymentMethod) === 'Installment' && (
+                <div className="flex gap-3 text-sm">
+                  <div className="flex-1 bg-blue-50 rounded-xl p-3">
+                    <p className="text-blue-700 text-xs font-semibold uppercase mb-1">Monthly Installment</p>
+                    <p className="font-black text-blue-700">
+                      {formatPKR(Number(createdSale?.monthly_installment ?? monthly ?? 0))}
+                    </p>
+                  </div>
+                  <div className="flex-1 bg-purple-50 rounded-xl p-3">
+                    <p className="text-purple-700 text-xs font-semibold uppercase mb-1">Next Due Date</p>
+                    <p className="font-bold text-purple-700">
+                      {createdSale?.next_due_date
+                        ? new Date(createdSale.next_due_date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(15); return d.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }); })()
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="px-6 pb-6 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  setShowInvoice(true)
+                  setShowSuccess(false)
+                  window.setTimeout(() => window.print(), 400)
+                }}
+                className="flex items-center justify-center gap-2 bg-[oklch(0.35_0.165_260)] hover:bg-[oklch(0.28_0.165_260)] text-white font-semibold py-2.5 px-4 rounded-xl transition text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                Print Invoice
+              </button>
+              <button
+                onClick={resetSale}
+                className="flex items-center justify-center gap-2 bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] text-white font-semibold py-2.5 px-4 rounded-xl transition text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                Create New Sale
+              </button>
+              <button
+                onClick={() => router.push(`/admin/customers/${createdSale?.customer?.id || createdSale?.customer_id}`)}
+                className="flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2.5 px-4 rounded-xl transition text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                View Customer
+              </button>
+              <button
+                onClick={() => router.push(`/admin/sales/${createdSale?.id}`)}
+                className="flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2.5 px-4 rounded-xl transition text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                View Sale Details
+              </button>
             </div>
           </div>
         </div>

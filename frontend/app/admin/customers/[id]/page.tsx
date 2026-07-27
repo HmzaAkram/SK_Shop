@@ -108,19 +108,21 @@ export default function CustomerProfile() {
             </div>
 
             {/* Witness / Guarantor */}
-            <div className="col-span-2">
+            <div className="col-span-2 space-y-4">
               {loading ? (
                 <p className="text-sm text-gray-500">Loading witness information...</p>
               ) : (
-                (customer?.witness?.witness_1?.full_name) ? (
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-[oklch(0.58_0.235_29.234)] mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Witness (Installment)</p>
-                      <p className="text-sm font-semibold text-gray-900">{customer.witness.witness_1.full_name}</p>
-                      <p className="text-xs text-gray-500">{customer.witness.witness_1.phone ?? 'Not Available'}</p>
+                Object.keys(customer?.witness ?? {}).length > 0 ? (
+                  Object.entries(customer.witness).map(([key, w]: [string, any]) => (
+                    <div key={key} className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-[oklch(0.58_0.235_29.234)] mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Witness {key.replace('witness_', '')}</p>
+                        <p className="text-sm font-semibold text-gray-900">{w.full_name}</p>
+                        <p className="text-xs text-gray-500">{w.phone ?? 'No Phone'}</p>
+                      </div>
                     </div>
-                  </div>
+                  ))
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-500">No Witness Information Available</div>
                 )
