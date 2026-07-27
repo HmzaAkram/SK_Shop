@@ -8,13 +8,28 @@ use App\Models\SaleItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
     public function summary(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->format('Y-m-d'));
-        $to   = $request->get('to', now()->format('Y-m-d'));
+        // Determine date range based on request parameters
+        $fromDate = $request->query('from_date');
+        $toDate   = $request->query('to_date');
+        $month    = $request->query('month');
+        $year     = $request->query('year');
+
+        if ($fromDate && $toDate) {
+            $from = Carbon::createFromFormat('Y-m-d', $fromDate)->startOfDay()->format('Y-m-d');
+            $to   = Carbon::createFromFormat('Y-m-d', $toDate)->endOfDay()->format('Y-m-d');
+        } elseif ($month && $year) {
+            $from = Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
+            $to   = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
+        } else {
+            $from = Carbon::now()->startOfMonth()->format('Y-m-d');
+            $to   = Carbon::now()->endOfDay()->format('Y-m-d');
+        }
 
         // Revenue: canonical source -> sum of sale_items.subtotal for date range
         $totalRevenue = SaleItem::whereHas('sale', function ($q) use ($from, $to) {

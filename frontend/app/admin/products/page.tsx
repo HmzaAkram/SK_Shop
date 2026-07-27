@@ -394,14 +394,14 @@ export default function ProductsPage() {
       {/* Add Product Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Sticky Header */}
             <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-xl font-bold text-gray-900">Add New Product</h2>
             </div>
 
             {/* Scrollable Body */}
-            <div className="px-6 py-4 overflow-y-auto flex-1">
+            <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
@@ -414,7 +414,7 @@ export default function ProductsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Real Price</label>
                     <input 
@@ -436,18 +436,22 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Initial Stock</label>
-                    <input 
-                      type="number" 
-                      value={newProduct.stock}
-                      onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
-                      placeholder="0"
-                    />
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Initial Stock</label>
+                      <input 
+                        type="number" 
+                        value={newProduct.stock}
+                        onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary focus:outline-none" 
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* close grid container */}
 
                     {/* Stock Refill (only shown when editing) */}
                     {isEditing && (
-                      <div className="mt-3 p-3 border border-gray-100 rounded-lg bg-gray-50">
+                      <div className="mt-3 p-3 border border-gray-100 rounded-lg bg-gray-50 col-span-3 w-full">
                         <h4 className="text-sm font-bold text-gray-800 mb-2">Stock Refill</h4>
                         <div className="text-sm text-gray-700 mb-2">Current Stock: <span className="font-bold">{currentStock ?? newProduct.stock}</span></div>
                         <div className="flex gap-2">
@@ -462,9 +466,7 @@ export default function ProductsPage() {
                           <button onClick={handleRefillStock} className="px-3 py-2 rounded-lg bg-[oklch(0.58_0.235_29.234)] text-white font-medium">Refill Stock</button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
+                   )}
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
@@ -596,7 +598,6 @@ export default function ProductsPage() {
                   )}
                 </div>
               </div>
-            </div>
 
             {/* Sticky Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
