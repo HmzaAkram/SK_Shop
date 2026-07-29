@@ -37,6 +37,7 @@ export default function NewSalePage() {
   const [paymentAccounts, setPaymentAccounts] = useState<any[]>([])
   const [showAddAccountModal, setShowAddAccountModal] = useState(false)
   const [newAccountName, setNewAccountName] = useState('')
+  const [newAccountOpeningBalance, setNewAccountOpeningBalance] = useState('0')
   
   useEffect(() => {
     fetchApi('/payment-accounts').then(res => {
@@ -49,13 +50,17 @@ export default function NewSalePage() {
     try {
       const res = await fetchApi('/payment-accounts', {
         method: 'POST',
-        body: JSON.stringify({ name: newAccountName.trim() })
+        body: JSON.stringify({ 
+          name: newAccountName.trim(),
+          opening_balance: Number(newAccountOpeningBalance)
+        })
       })
       if (res && res.success) {
         setPaymentAccounts([...paymentAccounts, res.data])
         setPaymentAccountId(res.data.id.toString())
         setShowAddAccountModal(false)
         setNewAccountName('')
+        setNewAccountOpeningBalance('0')
       }
     } catch (error) {
       console.error(error)
@@ -1146,8 +1151,16 @@ export default function NewSalePage() {
                 type="text"
                 value={newAccountName}
                 onChange={(e) => setNewAccountName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)] mb-4"
                 placeholder="Enter account name..."
+              />
+              <label className="block text-xs font-bold text-gray-700 mb-1">Opening Balance (RS)</label>
+              <input
+                type="number"
+                value={newAccountOpeningBalance}
+                onChange={(e) => setNewAccountOpeningBalance(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                placeholder="e.g. 10000"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">

@@ -1,19 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { FilterExportBar } from './FilterExportBar'
+import { fetchApi } from '@/lib/api'
 
 export function BankTab() {
-  const [hasSetOpeningBalance, setHasSetOpeningBalance] = useState(false)
-  const [openingBalance, setOpeningBalance] = useState('')
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleSetBalance = () => {
-    if (openingBalance) {
-      alert('Opening Balance Set! This action cannot be undone here.')
-      setHasSetOpeningBalance(true)
-    }
-  }
+  useEffect(() => {
+    fetchApi('/payment-accounts')
+      .then(res => {
+        if (res.success) setAccounts(res.data ?? [])
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
-  const transactions: any[] = []
+  const totalCurrentBalance = accounts.reduce((acc, account) => acc + Number(account.current_balance || 0), 0)
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -21,88 +24,47 @@ export function BankTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card className="p-6 md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-          <h3 className="text-white/80 text-sm font-medium mb-2">Current Bank Balance</h3>
-          <p className="text-3xl font-bold">RS 350,000</p>
-          <p className="text-sm text-white/70 mt-2">As of Today</p>
+          <h3 className="text-white/80 text-sm font-medium mb-2">Total Bank Balance</h3>
+          <p className="text-3xl font-bold">RS {totalCurrentBalance.toLocaleString()}</p>
+          <p className="text-sm text-white/70 mt-2">Combined for all accounts</p>
         </Card>
         
-        <Card className="p-6 md:col-span-3 flex items-center">
-          {!hasSetOpeningBalance ? (
-            <div className="w-full">
-              <h3 className="text-lg font-bold text-foreground mb-2">Set Opening Balance</h3>
-              <p className="text-sm text-foreground/70 mb-4">Please set the initial bank balance. Note: This can only be done once by the Admin.</p>
-              <div className="flex gap-4">
-                <input 
-                  type="number" 
-                  value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
-                  placeholder="Enter initial amount (RS)" 
-                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary outline-none max-w-sm"
-                />
-                <button onClick={handleSetBalance} className="px-4 py-2 bg-[oklch(0.58_0.235_29.234)] text-white rounded-lg text-sm font-medium hover:bg-[oklch(0.52_0.235_29.234)] transition">
-                  Save Opening Balance
-                </button>
-              </div>
-            </div>
+        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div className="col-span-full p-6 text-center text-gray-500">Loading accounts...</div>
+          ) : accounts.length === 0 ? (
+            <div className="col-span-full p-6 text-center text-gray-500">No bank accounts found. Create one during a new sale.</div>
           ) : (
-            <div className="w-full flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Opening Balance Set</h3>
-                <p className="text-sm text-foreground/70">Initial balance recorded successfully.</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-foreground/50">Initial Amount</p>
-                <p className="text-xl font-bold text-foreground">RS {Number(openingBalance).toLocaleString()}</p>
-              </div>
-            </div>
+            accounts.map(account => (
+              <Card key={account.id} className="p-5 flex flex-col justify-between hover:shadow-md transition">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-foreground">{account.name}</h3>
+                    <span className="bg-[oklch(0.58_0.235_29.234)]/10 text-[oklch(0.58_0.235_29.234)] text-xs font-bold px-2 py-1 rounded">Active</span>
+                  </div>
+                  <div className="space-y-1 mt-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Opening Balance</span>
+                      <span className="font-medium text-gray-900">RS {Number(account.opening_balance).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Payments Received</span>
+                      <span className="font-medium text-green-600">
+                        +RS {(Number(account.current_balance) - Number(account.opening_balance)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 mt-4 border-t border-gray-100 flex justify-between items-center">
+                  <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Current</span>
+                  <span className="text-xl font-black text-gray-900">RS {Number(account.current_balance).toLocaleString()}</span>
+                </div>
+              </Card>
+            ))
           )}
-        </Card>
+        </div>
       </div>
 
-      <Card className="p-6">
-        <h2 className="text-xl font-bold text-foreground mb-6">Unified Transaction Ledger</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted text-foreground/70 uppercase font-semibold">
-              <tr>
-                <th className="px-4 py-3">Date / ID</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Entity</th>
-                <th className="px-4 py-3">Method</th>
-                <th className="px-4 py-3">Invoice</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3 text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {transactions.map((trx) => (
-                <tr key={trx.id} className="hover:bg-muted/50 transition cursor-pointer">
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-foreground">{trx.date}</p>
-                    <p className="text-xs text-foreground/50">{trx.id}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      trx.type.includes('Income') || trx.type.includes('Customer Payment') 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {trx.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{trx.entity}</td>
-                  <td className="px-4 py-3 text-foreground/70">{trx.method}</td>
-                  <td className="px-4 py-3 text-foreground/70 text-xs">{trx.invoice}</td>
-                  <td className={`px-4 py-3 text-right font-bold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {trx.amount > 0 ? '+' : ''} RS {Math.abs(trx.amount).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right font-bold text-foreground">RS {trx.balance.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
     </div>
   )
 }

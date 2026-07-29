@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class PaymentAccount extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'opening_balance'];
 }

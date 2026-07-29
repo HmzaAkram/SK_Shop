@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ export default function SalesPage() {
     try {
       const res = await fetchApi(`/sales/${saleId}`)
       const sale = res?.data || res
-      setSelectedSale(mapSaleToTransaction(sale))
+      setSelectedSale(sale) // Save raw sale object instead of mapping
       setIsModalOpen(true)
     } catch (err: any) {
       alert(err?.message || 'Failed to load sale details')
@@ -149,7 +149,7 @@ export default function SalesPage() {
                 <tr key={sale.id} className="hover:bg-muted/50 transition">
                   <td className="px-6 py-4 text-foreground font-bold">INV-{sale.invoice_number ?? sale.id}</td>
                   <td className="px-6 py-4 text-foreground">{sale.customer?.name ?? sale.customer}</td>
-                  <td className="px-6 py-4 text-foreground/70">{sale.sale_date ?? sale.date}</td>
+                  <td className="px-6 py-4 text-foreground/70">{(sale.sale_date ?? sale.date)?.split('T')[0]}</td>
                   <td className="px-6 py-4 text-center text-foreground">{(sale.items || []).length}</td>
                   <td className="px-6 py-4 text-right text-foreground font-bold">{sale.total_amount ?? sale.amount}</td>
                   <td className="px-6 py-4 text-center">
@@ -181,7 +181,7 @@ export default function SalesPage() {
               <div>
                 <h3 className="font-bold text-foreground">INV-{sale.invoice_number ?? sale.id}</h3>
                 <p className="text-sm text-foreground/70">{sale.customer?.name ?? sale.customer}</p>
-                <p className="text-sm text-foreground/70">{sale.sale_date ?? sale.date}</p>
+                <p className="text-sm text-foreground/70">{(sale.sale_date ?? sale.date)?.split('T')[0]}</p>
               </div>
               <span className={`text-xs font-semibold px-2 py-1 rounded ${getStatusColor(sale.type ?? '')}`}>
                 {sale.type ?? (sale.paid ? 'Completed' : 'Installment')}
@@ -205,7 +205,104 @@ export default function SalesPage() {
       </div>
 
       {isModalOpen && selectedSale && (
-        <TransactionDetailsModal transaction={selectedSale} onClose={() => { setIsModalOpen(false); setSelectedSale(null); }} />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+              <h2 className="text-xl font-bold text-gray-900">Invoice Details</h2>
+              <button className="text-gray-400 hover:text-gray-600" onClick={() => { setIsModalOpen(false); setSelectedSale(null); }}>Close</button>
+            </div>
+
+            {/* Printable Area */}
+            <div className="p-8 overflow-y-auto flex-1 bg-white print:p-0" id="invoice-print-area">
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-black text-gray-900 uppercase">SK Electronics</h1>
+                <p className="text-sm text-gray-500">Invoice #INV-{selectedSale?.invoice_number || selectedSale?.id}</p>
+              </div>
+
+              <div className="flex justify-between mb-8 text-sm">
+                <div>
+                  <p className="text-gray-500">Bill To:</p>
+                  <p className="font-bold text-gray-900">{selectedSale?.customer?.name || 'N/A'}</p>
+                  <p className="text-gray-600">{selectedSale?.customer?.phone || 'N/A'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-500">Date:</p>
+                  <p className="font-bold text-gray-900">{new Date(selectedSale?.sale_date || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                  <p className="text-gray-500 mt-2">Payment Method:</p>
+                  <p className="font-bold text-[oklch(0.58_0.235_29.234)]">{selectedSale?.type}</p>
+                </div>
+              </div>
+
+              <table className="w-full text-sm mb-6">
+                <thead className="border-b-2 border-gray-900">
+                  <tr>
+                    <th className="text-left py-2">Item</th>
+                    <th className="text-center py-2">Qty</th>
+                    <th className="text-right py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(selectedSale?.items || []).map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="py-3">
+                        <p className="font-bold text-gray-900">{item.product?.name || 'Unknown Item'}</p>
+                      </td>
+                      <td className="py-3 text-center">{item.quantity}</td>
+                      <td className="py-3 text-right font-medium">
+                        RS {Number(item.subtotal || (item.unit_price * item.quantity)).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="border-t-2 border-gray-900 pt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-bold text-gray-700">Subtotal</span>
+                  <span className="font-bold text-gray-900">RS {Number(selectedSale?.total_amount || 0).toLocaleString()}</span>
+                </div>
+
+                {selectedSale?.type === 'Installment' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="font-bold text-gray-700">Down Payment Paid</span>
+                      <span className="font-bold text-gray-900">RS {Number(selectedSale?.advance_payment || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-gray-200 pt-2">
+                      <span className="font-bold text-red-600">Remaining Balance</span>
+                      <span className="font-bold text-red-600">
+                        RS {Math.max(0, Number(selectedSale?.total_amount || 0) - Number(selectedSale?.advance_payment || 0)).toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {selectedSale?.type !== 'Installment' && (
+                  <div className="flex justify-between text-green-600 border-t border-gray-200 pt-2">
+                    <span className="font-bold">Total Paid</span>
+                    <span className="font-bold">RS {Number(selectedSale?.total_amount || 0).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0 print:hidden">
+              <Button variant="outline" onClick={() => { setIsModalOpen(false); setSelectedSale(null); }}>Close</Button>
+              <Button className="bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)]" onClick={() => {
+                const printContent = document.getElementById('invoice-print-area')
+                const originalContent = document.body.innerHTML
+                if (printContent) {
+                  document.body.innerHTML = printContent.innerHTML
+                  window.print()
+                  document.body.innerHTML = originalContent
+                  window.location.reload()
+                }
+              }}>
+                Print Invoice
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {error && <div className="text-red-600">{error}</div>}
