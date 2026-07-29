@@ -17,6 +17,11 @@ class Customer extends Model
         'guarantor_name',
         'guarantor_phone',
         'guarantor_cnic',
+        'witnesses',
+    ];
+
+    protected $casts = [
+        'witnesses' => 'array',
     ];
 
     public function sales()

@@ -21,6 +21,11 @@ class StoreCustomerRequest extends FormRequest
             'guarantor_name' => ['nullable', 'string', 'max:255'],
             'guarantor_phone' => ['nullable', 'string', 'max:50'],
             'guarantor_cnic' => ['nullable', 'string', 'max:50'],
+            'witnesses' => ['nullable', 'array'],
+            'witnesses.*.full_name' => ['nullable', 'string', 'max:255'],
+            'witnesses.*.phone' => ['nullable', 'string', 'max:50'],
+            'witnesses.*.cnic' => ['nullable', 'string', 'max:50'],
+            'witnesses.*.address' => ['nullable', 'string'],
         ];
     }
 }

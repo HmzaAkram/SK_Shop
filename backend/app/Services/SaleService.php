@@ -42,7 +42,14 @@ class SaleService
 
             if (!$customer) {
                 // create new customer record
-                $customer = Customer::create($customerData);
+                $customerDataToSave = $customerData;
+                // Laravel will automatically cast witnesses to JSON if it is in the fillable properties
+                $customer = Customer::create($customerDataToSave);
+            } else {
+                // If the customer exists but didn't have witnesses, we can optionally update them
+                if (isset($customerData['witnesses']) && empty($customer->witnesses)) {
+                    $customer->update(['witnesses' => $customerData['witnesses']]);
+                }
             }
 
             // Lock the row that holds the highest invoice number to avoid a race
@@ -57,6 +64,8 @@ class SaleService
                 'invoice_number' => $invoiceNumber,
                 'sale_date' => $data['sale_date'],
                 'type' => $data['type'],
+                'payment_method' => $data['payment_method'] ?? 'Cash',
+                'payment_account_id' => $data['payment_account_id'] ?? null,
                 'total_amount' => 0,
                 'advance_payment' => $data['advance_payment'] ?? 0,
                 'total_installments' => $data['total_installments'] ?? null,

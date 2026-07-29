@@ -35,6 +35,9 @@ class CustomerResource extends JsonResource
             $totalPaid = (float) $this->total_paid;
         } elseif ($this->relationLoaded('sales')) {
             $totalPaid = (float) $this->sales->sum(function ($sale) {
+                if ($sale->type === 'Cash') {
+                    return (float) $sale->total_amount;
+                }
                 $paid = (float) $sale->advance_payment;
                 $paid += (float) $sale->installments->where('status', 'Paid')->sum('amount');
                 return $paid;

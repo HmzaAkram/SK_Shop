@@ -24,6 +24,7 @@ class CustomerController extends Controller
     {
         $query = Customer::query()
             ->withCount('sales')
+            ->withSum('sales', 'total_amount')
             // also include count of installment sales so frontend can show status label without extra queries
             ->withCount(['sales as installment_sales_count' => function ($q) {
                 $q->where('type', 'Installment');
@@ -207,6 +208,10 @@ class CustomerController extends Controller
 
         // Outstanding balance calculation (all sales - all down payments - all paid installments)
         $outstanding = $customer->sales->sum(function ($sale) {
+            if ($sale->type === 'Cash') {
+                return 0; // Cash/Bank Transfer sales are fully paid upfront
+            }
+
             $paidInstallments = $sale->installments
                 ->where('status', 'Paid')
                 ->sum('amount');
@@ -227,15 +232,30 @@ class CustomerController extends Controller
         });
 
         // Witness structure expected by frontend
-        $witness = [
-            'witness_1' => [
-                'full_name'   => $customer->guarantor_name ?? null,
-                'phone'       => $customer->guarantor_phone ?? null,
-                'cnic'        => $customer->guarantor_cnic ?? null,
-                'address'     => $customer->guarantor_address ?? null,
-                'relationship'=> null,
-            ],
-        ];
+        $witness = [];
+        
+        if (is_array($customer->witnesses) && count($customer->witnesses) > 0) {
+            foreach ($customer->witnesses as $index => $w) {
+                $witness['witness_' . ($index + 1)] = [
+                    'full_name'   => $w['full_name'] ?? null,
+                    'phone'       => $w['phone'] ?? null,
+                    'cnic'        => $w['cnic'] ?? null,
+                    'address'     => $w['address'] ?? null,
+                    'relationship'=> null,
+                ];
+            }
+        } else {
+            // Fallback to legacy guarantor fields if new witnesses array is not available
+            if ($customer->guarantor_name || $customer->guarantor_phone) {
+                $witness['witness_1'] = [
+                    'full_name'   => $customer->guarantor_name ?? null,
+                    'phone'       => $customer->guarantor_phone ?? null,
+                    'cnic'        => $customer->guarantor_cnic ?? null,
+                    'address'     => $customer->guarantor_address ?? null,
+                    'relationship'=> null,
+                ];
+            }
+        }
 
         return response()->json([
             'success' => true,

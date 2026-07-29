@@ -75,6 +75,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/expenses/{expense}', [ExpenseController::class, 'update']);
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 
+    // Payment Accounts
+    Route::get('/payment-accounts', [App\Http\Controllers\PaymentAccountController::class, 'index']);
+    Route::post('/payment-accounts', [App\Http\Controllers\PaymentAccountController::class, 'store']);
+
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 

@@ -12,6 +12,7 @@ class Sale extends Model
     protected $fillable = [
         'customer_id', 'invoice_number', 'sale_date', 'type',
         'total_amount', 'advance_payment', 'total_installments', 'monthly_installment', 'total_cogs',
+        'payment_method', 'payment_account_id',
     ];
 
     protected $casts = [

@@ -30,8 +30,37 @@ export default function NewSalePage() {
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('Cash')
+  const [paymentAccountId, setPaymentAccountId] = useState('')
   const [downPayment, setDownPayment] = useState('')
+  const [downPaymentMethod, setDownPaymentMethod] = useState('Cash')
   const [installmentMonths, setInstallmentMonths] = useState(12)
+  const [paymentAccounts, setPaymentAccounts] = useState<any[]>([])
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false)
+  const [newAccountName, setNewAccountName] = useState('')
+  
+  useEffect(() => {
+    fetchApi('/payment-accounts').then(res => {
+      if (res.success) setPaymentAccounts(res.data ?? [])
+    }).catch(console.error)
+  }, [])
+
+  const handleAddAccount = async () => {
+    if (!newAccountName.trim()) return
+    try {
+      const res = await fetchApi('/payment-accounts', {
+        method: 'POST',
+        body: JSON.stringify({ name: newAccountName.trim() })
+      })
+      if (res && res.success) {
+        setPaymentAccounts([...paymentAccounts, res.data])
+        setPaymentAccountId(res.data.id.toString())
+        setShowAddAccountModal(false)
+        setNewAccountName('')
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   // Customer Search & State
   const [query, setQuery] = useState('')
@@ -308,7 +337,9 @@ export default function NewSalePage() {
           })),
         },
         sale_date: new Date().toISOString().split('T')[0],
-        type: paymentMethod,
+        type: paymentMethod === 'Installment' ? 'Installment' : 'Cash',
+        payment_method: paymentMethod === 'Installment' ? downPaymentMethod : paymentMethod,
+        payment_account_id: (paymentMethod === 'Bank Transfer' || (paymentMethod === 'Installment' && downPaymentMethod === 'Bank Transfer')) ? paymentAccountId : null,
         total_amount: subtotal,
         advance_payment: paymentMethod === 'Installment' ? Number(downPayment || 0) : 0,
         total_installments: paymentMethod === 'Installment' ? installmentMonths : null,
@@ -695,6 +726,25 @@ export default function NewSalePage() {
                 </div>
               </div>
 
+              {((paymentMethod === 'Bank Transfer') || (paymentMethod === 'Installment' && downPaymentMethod === 'Bank Transfer')) && (
+                <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-bold text-gray-700">Select Bank Account</label>
+                    <button onClick={() => setShowAddAccountModal(true)} className="text-sm font-bold text-[oklch(0.58_0.235_29.234)] hover:underline">+ Add Account</button>
+                  </div>
+                  <select
+                    value={paymentAccountId}
+                    onChange={(e) => setPaymentAccountId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                  >
+                    <option value="">Select an account</option>
+                    {paymentAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {paymentMethod === 'Installment' && (
                 <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
                   <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -703,6 +753,20 @@ export default function NewSalePage() {
                   </h3>
 
                   <div className="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Down Payment Method</label>
+                      <select
+                        value={downPaymentMethod}
+                        onChange={(e) => {
+                          setDownPaymentMethod(e.target.value)
+                          if (e.target.value !== 'Bank Transfer') setPaymentAccountId('')
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">Down Payment (PKR)</label>
                       <input
@@ -1066,6 +1130,29 @@ export default function NewSalePage() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 View Sale Details
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Bank Account Modal */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Add Bank Account</h3>
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Account Name (e.g. Meezan Bank, EasyPaisa)</label>
+              <input
+                type="text"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:ring-2 focus:ring-[oklch(0.58_0.235_29.234)]"
+                placeholder="Enter account name..."
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-100 transition" onClick={() => setShowAddAccountModal(false)}>Cancel</button>
+              <button onClick={handleAddAccount} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[oklch(0.58_0.235_29.234)] hover:bg-[oklch(0.52_0.235_29.234)] transition">Add</button>
             </div>
           </div>
         </div>
